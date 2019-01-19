@@ -6,6 +6,25 @@
 #include <stdbool.h>
 #include <ctype.h>
 
+int writeStr(char** cache, int cacheLength, int pos, char* str){
+	
+	if(*(cache+pos) == NULL){
+		//there is no word at pos
+		*(cache+pos) = (char*)calloc(strlen(str)+1, sizeof(char));
+		strcpy(*(cache+pos), str);
+		printf("Word \"%s\" ==> %d (calloc)\n",str,pos);
+		return 1;
+	}else{
+		//there is word exist
+		*(cache+pos) = (char*)realloc(*(cache+pos),(strlen(str)+1)*sizeof(char));
+		strcpy(*(cache+pos),str);
+		printf("Word \"%s\" ==> %d (realloc)\n",str,pos);
+		return 1;
+	}
+	
+	return 0;
+}
+
 
 int main( int argc, char ** argv){
 	
@@ -15,11 +34,20 @@ int main( int argc, char ** argv){
 	}
 	
 	//check the correctness of cacheLength
+	for( int i = 0; i < strlen(*(argv+1)); i++){
+		if( isdigit(*(*( argv+1 )+i)) == 0){
+			fprintf(stderr,"ERROR: entering non-digit char\n");
+			return EXIT_FAILURE;
+		}
+	}
 	int cacheLength = atoi(*(argv+1));
 	if(cacheLength <= 0){
 		fprintf(stderr, "ERROR: wrong cache size input\n");
 		return EXIT_FAILURE;
 	}
+	
+	//create the cache
+	char** cache = (char**)calloc(cacheLength, sizeof(char*));
 	
 #ifdef P1
 	printf("the first argument is %s\n", *argv);
@@ -51,12 +79,19 @@ int main( int argc, char ** argv){
 			for(int i =0; i < length; i++){
 				position += (int)*(info+i);
 			}
+						
+		#ifdef D3
+			printf("The total ASCII value is: %d\n", position);
+		#endif
+		
 			position = position % cacheLength;
+			writeStr(cache,cacheLength,position,info);
 			
-#ifdef DEBUG2
+		#ifdef DEBUG2
 			printf("The word is %s\n", info);
 			printf("Position is %d\n", position);
-#endif	
+		#endif	
+		
 			length = 0;
 			free(info);
 			info = (char*) calloc(128, sizeof(char));
@@ -65,6 +100,14 @@ int main( int argc, char ** argv){
 	
 		
 	}
+	//free memory and close file
+	for(int i = 0; i < cacheLength; i++){
+		if(*(cache+i) != NULL){
+			printf("Cache index %d ==> \"%s\"\n",i,*(cache+i));
+		}
+		free(*(cache+i));
+	}
+	free(cache);
 	free(info);
 	fclose(fp);
 	
