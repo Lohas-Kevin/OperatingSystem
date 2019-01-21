@@ -74,7 +74,7 @@ int main( int argc, char ** argv){
 			*(info+length) = temp;
 			length = length + 1;
 		}else if(length >= 3) {
-			//if we have read a word
+			//if we have read a valid word
 			int position = 0;
 			for(int i =0; i < length; i++){
 				position += (int)*(info+i);
@@ -92,6 +92,11 @@ int main( int argc, char ** argv){
 			printf("Position is %d\n", position);
 		#endif	
 		
+			length = 0;
+			free(info);
+			info = (char*) calloc(128, sizeof(char));
+		}else{
+			//if we read a word smaller then 3 chars
 			length = 0;
 			free(info);
 			info = (char*) calloc(128, sizeof(char));
