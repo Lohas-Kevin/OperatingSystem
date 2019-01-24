@@ -6,8 +6,12 @@
 #include <stdbool.h>
 #include <ctype.h>
 
-int writeStr(char** cache, int cacheLength, int pos, char* str){
-	
+int writeStr(char** cache, int pos, char* str){
+	/*
+		this function takes the cache, the string which will be
+		writen into the cache and the position in cache where the 
+		string will be writen to.
+	*/
 	if(*(cache+pos) == NULL){
 		//there is no word at pos
 		*(cache+pos) = (char*)calloc(strlen(str)+1, sizeof(char));
@@ -28,12 +32,13 @@ int writeStr(char** cache, int cacheLength, int pos, char* str){
 
 int main( int argc, char ** argv){
 	
+	//check number of arguments
 	if(argc != 3){
 		fprintf(stderr, "ERROR: Invalid arguments\n");
 		return EXIT_FAILURE;
 	}
 	
-	//check the correctness of cacheLength
+	//check the correctness of cacheLength input(should be pure digits)
 	for( int i = 0; i < strlen(*(argv+1)); i++){
 		if( isdigit(*(*( argv+1 )+i)) == 0){
 			fprintf(stderr,"ERROR: entering non-digit char\n");
@@ -41,6 +46,7 @@ int main( int argc, char ** argv){
 		}
 	}
 	int cacheLength = atoi(*(argv+1));
+	//check if the cache length is valid or not(should be bigger than 0)
 	if(cacheLength <= 0){
 		fprintf(stderr, "ERROR: wrong cache size input\n");
 		return EXIT_FAILURE;
@@ -56,6 +62,7 @@ int main( int argc, char ** argv){
 	printf("the second argument conversion is %d\n", cacheLength);
 #endif	
 
+	//open the file and read strings byte by byte
 	FILE* fp;
 	fp = fopen(*(argv+2), "r");
 	if(fp == NULL){
@@ -84,19 +91,21 @@ int main( int argc, char ** argv){
 			printf("The total ASCII value is: %d\n", position);
 		#endif
 		
+			//calculate the position
 			position = position % cacheLength;
-			writeStr(cache,cacheLength,position,info);
+			writeStr(cache,position,info);
 			
 		#ifdef DEBUG2
 			printf("The word is %s\n", info);
 			printf("Position is %d\n", position);
 		#endif	
-		
+			
+			//free the old read buffer and create new 
 			length = 0;
 			free(info);
 			info = (char*) calloc(128, sizeof(char));
 		}else{
-			//if we read a word smaller then 3 chars
+			//if we read a word shorter then 3 chars
 			length = 0;
 			free(info);
 			info = (char*) calloc(128, sizeof(char));
