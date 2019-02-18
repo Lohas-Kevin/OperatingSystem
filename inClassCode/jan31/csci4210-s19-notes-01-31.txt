@@ -1,0 +1,74 @@
+[01/31/2019]
+
+Quiz 1 grades are now available in Submitty, including grading rubric
+-- graded out of 20 points
+-- Question 4
+   -2 Wrong order
+   -3 Line 1 partially wrong
+   -3 Line 2 partially wrong
+   -5 One line mostly wrong
+   -2 Incorrect size of pointer
+
+Bring quiz (also exam) grading questions to me after class or
+ during my office hours within one week
+
+=====================================================================
+
+requirements for IPC:
+-- synchronization
+-- protocol
+
+types of Inter-Process Communication (IPC)
+-- files (a process writes to a file; another process reads the file)
+-- pipe (a unidirectional communication channel)
+-- message queues
+-- socket-based communication (network programming)
+-- exit status (from a terminating child process to a parent process)
+
+From "man 3 exit":
+
+The  exit()  function  causes normal process termination and the value of
+       status & 0377 is returned to the parent (see wait(2)).
+                ^^^^
+               leading 0 indicates this is an octal value (11111111 binary)
+
+
+
+
+
+  fork-with-wait.c example
+
+
+
+                   [PARENT/ORIGINAL PROCESS]
+                        before fork()...
+                    /                     \
+                   /                       \
+                  /                         \
+                 /                           \
+         [PARENT]                             [CHILD]
+         after fork()...                      after fork()...
+                                              <delay>
+         PARENT: my child process ID is ###   CHILD: happy birthday!
+                                              All done!
+         PARENT: waiting for my
+          child process to terminate....
+
+        <the above two sets of outputs can interleave with one another,
+           but the relative orders of each are exactly as shown>
+
+                 \                           /
+                  \                         /  [CHILD PROCESS TERMINATES]
+                   \                       /
+                    \                     /
+          <after the wait() or waitpid() call in the PARENT>
+
+                      PARENT: child process ### terminated...
+                      [PARENT] All done!
+
+
+
+fork-with-variables.c
+
+lstat example -- directories.c
+

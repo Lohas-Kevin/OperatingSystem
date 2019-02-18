@@ -1,0 +1,91 @@
+[02/14/2019]
+
+Quiz 3 today -- Happy Valentine's Day!
+
+=====================================================================
+
+Homework 2
+-- see v1.5 of the specifications
+-- due date is 11:59PM on Tuesday 2/19
+-- re-read all specifications (before posting to Piazza)
+-- note that you must use execv() in the child process
+-- also note that you must use lstat()
+
+=====================================================================
+
+PREVIOUSLY.......
+
+  RUNNING            READY                  WAITING (on I/O)
+   STATE             STATE                   STATE
+
+  +-----+                     ???<==P8   +---------------------+
+  |     |     +---------------------     |                     |
+  | CPU | <== | P3 | P5 | P2 | etc.      |  I/O subsystem      |
+  | P12 |     +---------------------     |                     |
+  +-----+                                +---------------------+
+
+  RUNNING STATE: process is actively using the CPU
+                 (i.e., executing/running its instructions)
+
+  READY STATE: process is ready to use the CPU
+               (i.e., idly waiting in the Ready Queue)
+
+  WAITING STATE: process is waiting for I/O operation(s) to complete
+
+
+ (job)      (process)
+  NEW -----> READY ---------------> RUNNING ----------> TERMINATED
+               ^                      |
+               |                      |
+               |                      |
+               |                      v
+               -------WAITING----------
+
+
+
+
+ALGORITHM   PREEMPTION?     ADVANTAGE(S)           DISADVANTAGE(S)
+
+ FCFS       non-preemptive  easy to implement      long wait times
+                            minimal overhead       long turnaround times
+                            no starvation
+
+ SJF        non-preemptive  optimal (fastest)      starvation
+                             (least average        requires us to predict
+                               wait time)            CPU burst times
+
+ SRT        preemptive                             starvation
+                                                   requires us to predict
+                                                     CPU burst times
+
+ Priority   non-preemptive  finer control over     starvation
+             or preemptive    process order
+
+ Priority   non-preemptive  no starvation          but we still have
+  w Aging    or preemptive                          long wait times for
+   (PWA)                                             low-priority processes
+
+ Round      preemptive      no starvation          longer average wait times
+  Robin      based on       fairness               increased overhead
+   (RR)       timeslice                              (more context switches)
+               expiration                          strong dependency on
+                                                     timeslice selection
+
+===================================================================
+
+
+           --------------+   +-----+   +-------+
+  -------->  ready queue |-->| mem |-->|  CPU  |--> exit the system
+           --------------+   +-----+   +-------+
+  Arriving
+    Jobs
+
+ Mathematical models can be categorized as:
+
+ -- Deterministic
+    -- the behavior is predictable with 100% certainty
+
+ -- Stochastic
+    -- the behavior is uncertain, based on random events
+
+

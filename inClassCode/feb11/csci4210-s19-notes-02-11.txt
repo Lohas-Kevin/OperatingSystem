@@ -1,0 +1,424 @@
+[02/11/2019]
+
+=====================================================================
+
+Homework 2
+-- see v1.4 of the specifications
+-- re-read all specifications (before posting to Piazza)
+-- note that you must use execv() in the child process
+
+fork() and dynamically allocated memory
+
+=====================================================================
+
+PREVIOUSLY.......
+
+  RUNNING            READY                  WAITING (on I/O)
+   STATE             STATE                   STATE
+
+  +-----+                     ???<==P8   +---------------------+
+  |     |     +---------------------     |                     |
+  | CPU | <== | P3 | P5 | P2 | etc.      |  I/O subsystem      |
+  | P12 |     +---------------------     |                     |
+  +-----+                                +---------------------+
+
+  RUNNING STATE: process is actively using the CPU
+                 (i.e., executing/running its instructions)
+
+  READY STATE: process is ready to use the CPU
+               (i.e., idly waiting in the Ready Queue)
+
+  WAITING STATE: process is waiting for I/O operation(s) to complete
+
+
+ (job)      (process)
+  NEW -----> READY ---------------> RUNNING ----------> TERMINATED
+               ^                      |
+               |                      |
+               |                      |
+               |                      v
+               -------WAITING----------
+
+
+
+Challenges of CPU scheduling include:
+-- Processes alternate bursts of CPU time and I/O time;
+    how do we best handle such processes and the process mix?
+
+   +---------+ blocked +---------------------+   +-----------------+
+P1 |CPU burst|---------|    CPU burst        |---|      CPU burst  |--->
+   +---------+ on I/O  +---------------------+   +-----------------+
+
+   +---+      blocked on I/O                    +---+
+P2 |CPU|----------------------------------------|CPU|------------------>
+   +---+                                        +---+
+
+
+   P1 is a CPU-bound or compute-bound process,
+    whereas P2 is an I/O-bound process
+
+   We can model this as follows:
+   -- Consider CPU usage from a probabilistic viewpoint
+   -- Suppose processes spend fraction p of their time
+       waiting for I/O to complete
+   -- Given n processes in memory (i.e., the degree of multiprogramming is n),
+       then the probability that all n processes are waiting for I/O is:
+
+            n
+           p
+
+                                    n
+   -- CPU utilization is then: 1 - p
+
+
+For each CPU burst per process:
+
+WAIT TIME: How much time does a process spend in the ready queue
+           for its CPU burst?
+
+TURNAROUND TIME: How much time is required for a process to complete
+                 its CPU burst, from the time it enters the ready queue
+                 through to when it completes its CPU burst
+
+
+TURNAROUND TIME  =  WAIT TIME  +  CPU BURST TIME
+
+TURNAROUND TIME  =  WAIT TIME  +  CPU BURST TIME  +  OVERHEAD
+                                                    (context switches)
+
+
+First Come First Served (FCFS)
+
+   pid    CPU burst times      (Assume all processes arrive at time 0)
+   P1       18 ms
+   P2        3 ms
+   P3        4 ms
+
+   ready queue is ordered: P1 P2 P3
+
+    context switch       context switches
+       v                   v   v    v
+       +-------------------+---+----+------------->
+ FCFS: | P1                |P2 | P3 | ..........
+       +-------------------+---+----+------------->
+    t: 0                   18  21   25
+
+
+       P1 has 0 wait time        P1 has 18 ms turnaround time
+       P2 has 18 ms wait time    P2 has 21 ms turnaround time
+       P3 has 21 ms wait time    P3 has 25 ms turnaround time
+
+advantages: very simple; easy to implement; very low overhead
+
+disadvantages: larger processes can cause long delays for shorter processes
+
+
+
+Shortest Job First (SJF)
+
+   pid    CPU burst times      (Assume all processes arrive at time 0)
+   P1       18 ms
+   P2        3 ms
+   P3        4 ms
+
+   ready queue: P2 P3 P1   (priority queue)
+
+    context switches            context switch
+       v   v    v                   v
+       +---+----+-------------------+------------->
+  SJF: |P2 | P3 | P1                | ........
+       +---+----+-------------------+------------->
+    t: 0   3    7                   25
+
+       P1 has 7 ms wait time    P1 has 25 ms turnaround time
+       P2 has 0 wait time       P2 has 3 ms turnaround time
+       P3 has 3 ms wait time    P3 has 7 ms turnaround time
+
+advantages: lower average wait/turnaround times versus FCFS
+            good low turnaround times for interactive or I/O-bound processes
+
+disadvantages: process with a large CPU burst time might end up
+                facing INDEFINITE BLOCKING (i.e., takes a loooooooooong
+                 time to get to use the CPU);   fairness?
+
+               process with a large CPU burst time might end up
+                facing STARVATION (i.e., the process is starved
+                 because it NEVER has its time with the CPU)
+
+               higher overhead versus FCFS (priority queue)
+
+               we have no way of knowing ahead of time exactly what
+                the CPU burst times will be for each process
+                 (but we can predict......)
+
+
+Both FCFS and SJF are non-preemptive algorithms
+-- once a process is using the CPU for its CPU burst,
+    it will continue using the CPU until the burst is complete
+
+-- what if we added preemption to SJF?
+
+   -- i.e., when new process B arrives, it can potentially preempt
+       (replace) the currently running process A if B's CPU burst time
+        is less than the remaining burst time for process A
+
+
+Shortest Remaining Time (SRT)
+
+   pid    CPU burst times       arrival time
+   P1       18 ms                   0 ms
+   P2        3 ms                   2 ms
+   P3        4 ms                   3 ms
+   P4        3 ms                   5 ms
+
+   ready queue: P1
+
+    context switches
+       v  v   v   v    v              v
+       +--+---+---+----+--------------+----------->
+  SRT: |P1pP2 |P4 | P3 |  P1          | ......
+       +--+---+---+----+--------------+----------->
+    t: 0  2   5   8    12             28
+
+  When P2 preempts P1 at time 2 ms, P1 is added back to the ready queue
+
+   to do: calculate the wait and turnaround times for each process
+
+      P1 has wait time of 10 ms and turnaround time of 28 ms
+        (the wait time is the sum of all time spent in the ready queue
+          during the end-to-end turnaround time for the process)
+
+advantages: similar to SJF;
+            perhaps better at getting I/O-bound/interactive processes
+               through the CPU more quickly?
+
+disadvantages: similar to SJF;
+               P1 took even longer than in the previous example
+
+
+
+
+Priority scheduling
+
+-- Each process is assigned a priority based on:
+   -- CPU burst times (e.g., SJF/SRT)   <== estimated...
+   -- ratio of CPU to I/O activity (predicted/expected)
+   -- system resource usage
+   -- arbitrary or hard-coded
+
+-- The process with the highest priority gets scheduled first
+
+-- When multiple processes have the same priority, we need a tie-breaker,
+    which is a secondary algorithm on that subset (e.g., just use FCFS)
+
+-- We decide (ahead of time) whether the algorithm is preemptive or not
+
+-- If preemptive, an arriving process, if at a higher priority than
+    the currently running process, we have a preemption
+
+   -- When a preemption occurs, the currently running process is
+       context-switched out of the CPU and added back to the ready queue
+
+-- If non-preemptive, then once a process gets the CPU, it will hold
+    onto it indefinitely
+
+-- To help avoid starvation or indefinite blocking, we can use AGING:
+
+   -- If a given process is in the READY state (i.e., in the ready queue)
+       for some X amount of time, then we increase the priority of that
+        process by Y
+
+
+
+To better address (reduce/remove) starvation and indefinite blocking,
+ we can turn to the Round Robin (RR) algorithm:
+
+-- Essentially FCFS with a fixed time limit on each CPU burst
+    -- i.e., a timeslice or time quantum
+
+-- When a process starts using the CPU, a timer is set
+
+   -- The process either finishes its CPU burst before the timer expires
+       (btw in this case, the next process on the ready queue starts using
+        the CPU immediately...or at least after the context switch)
+
+   -- Or the process is PREEMPTED by the expiration of the timer,
+       in which case the process is added back to the end of the ready queue
+
+-- Selection of the timeslice is crucial
+
+   -- too large of a timeslice and we have FCFS
+
+   -- too small of a timeslice and we have too many context switches
+
+   -- try to minimize turnaround times if we can get "most" of the processes
+       finishing their respective CPU burst times within one timeslice
+
+   -- heuristic is 80% of CPU burst times should be less than the timeslice
+
+                                        1
+-- With N processes, each process gets ---th of CPU time ===> FAIRNESS
+                                        N
+
+-- If a process arrives at a later time (i.e., not time 0),
+    we need to decide where the process should be placed in the ready queue
+
+    -- In general, we always place an arriving process at the end of the queue
+        (...think FAIRNESS...)
+
+    -- Alternative approach: when a process arrives, add it to the
+        front of the queue (i.e., have it cut the line)
+       -- this "breaks" the FAIRNESS idea
+       -- the advantage here is that I/O-bound or interactive processes
+           get through their CPU bursts quickly and get back to doing
+            more I/O
+       -- one other idea: maybe we only have processes that we've
+           identified as I/O-bound processes jumping the line
+
+-- e.g., apply the RR algorithm to the processes listed below
+          using a timeslice of 3ms
+
+ pid   CPU burst times     arrival times
+ P1      20 ms                 0
+ P2       5 ms                 0
+ P3       2 ms                 2 ms
+ P4      10 ms                 4 ms
+
+QUEUE: 
+
+   RR (with timeslice of 3ms)
+    |
+  P1>XXXp    XXXp    XXXp  XXXp  XXXpXXXXX.  <== 5 preemptions
+  P2>   XXXp       XX.                       <== 1 preemption
+  P3| >    XX.                               <== 0 preemptions
+  P4|   >       XXXp    XXXp  XXXp  X.       <== 3 preemptions
+    +--------------------------------------------> time
+              111111111122222222223333333333
+    0123456789012345678901234567890123456789
+
+ What is the wait time and turnaround time for each process?
+
+ P1 has 17ms of wait time; P1 has 37ms of turnaround time
+ P2 has 11ms of wait time; P2 has 16ms of turnaround time
+ P3 has 4ms of wait time; P3 has 6ms of turnaround time
+ P4 has 18ms of wait time; P4 has 28ms of turnaround time
+
+ TO DO: repeat the above example using different timeslice values
+         (e.g., 2ms, 1ms, 6ms, 20ms, etc.)
+
+
+
+===================================================================
+ALGORITHM   PREEMPTION?     ADVANTAGE(S)           DISADVANTAGE(S)
+
+ FCFS       non-preemptive  easy to implement      long wait times
+                            minimal overhead       long turnaround times
+                            no starvation
+
+ SJF        non-preemptive  optimal (fastest)      starvation
+                             (least average        requires us to predict
+                               wait time)            CPU burst times
+
+ SRT        preemptive                             starvation
+                                                   requires us to predict
+                                                     CPU burst times
+
+ Priority   non-preemptive  finer control over     starvation
+             or preemptive    process order
+
+ Priority   non-preemptive  no starvation          but we still have
+  w Aging    or preemptive                          long wait times for
+   (PWA)                                             low-priority processes
+
+ Round      preemptive      no starvation          longer average wait times
+  Robin      based on       fairness               increased overhead
+   (RR)       timeslice                              (more context switches)
+               expiration                          strong dependency on
+                                                     timeslice selection
+
+===================================================================
+
+A key problem with SJF/SRT is that we do not know the actual CPU burst
+ times ahead of time.....
+
+-- We can predict the CPU burst times for each process based on
+    some historical data, e.g., measures of previous CPU burst times 
+
+-- We can use EXPONENTIAL AVERAGING (for EACH process)
+
+   tau   -- estimated burst time
+
+   t     -- actual burst time
+
+   alpha -- constant in the range [0.0,1.0), often 0.5 or higher
+
+
+
+   tau     =  alpha x t   +  (1-alpha) x tau
+      i+1              i                    i
+
+
+-- e.g., with alpha set to 0.5
+
+
+   tau  = 10  <== initial guess -- could be random, could be hardcoded,
+      0                             could be a running average of N previous
+                                     CPU burst times across all processes
+
+   t  = 6
+    0
+
+
+   tau  =  0.5 x t   +  0.5 x tau  =  0.5 x 6  +  0.5 x 10  = 8 (next guess)
+      1           0              0
+
+
+   t  = 4
+    1
+
+
+   tau  =  0.5 x t   +  0.5 x tau  =  0.5 x 4  + 0.5 x 8  = 6 (next estimate)
+      2           1              1
+
+
+   TO DO: keep going with this example (match the diagram...)
+
+   TO DO: recalculate using alpha = 0.75, 0.9, 0.25, etc.
+
+
+
+
+
+
+
+=====================================================================
+
+(after class.....)
+
+
+ char * mypath = getenv( "MYPATH" );
+  /* e.g., MYPATH is "/usr/local/bin#/usr/bin#/bin#." */
+                      ^              ^
+                      |              |
+                      x              x
+
+                   char * x = strtok( mypath, "#" );
+                   a[i] = malloc( strlen( x ) + 1 );
+                   strcpy( a[i], x );
+                   x = strtok( NULL, "#" );
+
+ char * usercommand = "ls";
+
+ while ( 1 )
+ {
+   /* create a full path to test: "/usr/local/bin/ls" and
+        send that to lstat() */
+
+      /* if not, try "/usr/bin/ls" */
+
+         /* if not, try "/bin/ls" <==== FOUND! call fork()/execv() */
+
+            /* ... */
+
+ }
+
