@@ -1,0 +1,2 @@
+rc from dup2() is 1
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
