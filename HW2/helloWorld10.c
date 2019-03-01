@@ -8,17 +8,17 @@
 #include <string.h>
 
 
+
 int main(){
 	
-	char* s = calloc(1024, sizeof(char));
-	if(getenv("$MYPATH") == NULL){
-		free(s);
-		printf("$MYPATH is not set\n");
-	}else{
-		s = getenv("$MYPATH");
-		printf("$MYPATH = %s",s);
-		free(s);
+	for(int i = 0; i < 5; i++){
+		
+		printf("Hello World\n");
+		sleep(2);
+		
 	}
+	
+	printf("finished\n");
 	
 	return EXIT_SUCCESS;
 	
