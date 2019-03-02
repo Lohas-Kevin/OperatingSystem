@@ -310,6 +310,7 @@ int main(){
 				//if there is the second child, wait pid for that
 				if(multiTask == 1 && result2 == 1){
 					//if we have valid second process and IPC needed
+					printf("bla\n");
 					pid_t pid2;
 					pid2 = fork();
 					
@@ -344,7 +345,7 @@ int main(){
 				
 				
 			}
-		}else if(result == 0){
+		}else{
 			fprintf(stderr, "ERROR: command \"%s\" not found\n", argv[0]);
 		}
 		
