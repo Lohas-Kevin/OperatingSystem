@@ -80,6 +80,7 @@ int divideInput(char* input, char** argv){
 		argv[count] = temp;
 		count++;
 		token = strtok(NULL, " ");
+		//printf("temp is [%s]\n",temp);
 	}
 	return count;
 	
@@ -138,11 +139,10 @@ int main(){
 		int count;
 		//second set of variables if there is two processes
 		char** argv2 = calloc(16, sizeof(char*));
-		int count2;
+		int count2 = -1;
 		
 		count = divideInput(rBuffer, argv);
 		int seppos = -1;
-		
 		//check is there any background or multi tasks
 		if(count >0){
 			
@@ -165,17 +165,31 @@ int main(){
 		}
 		
 		if(multiTask == 1 && seppos != -1){
-			
+			count2 = 0;
 			for(int i = seppos+1; i < count; i++){
 				char* arg2 = calloc(64, sizeof(char*));
 				arg2 = strcpy(arg2, argv[i]);
 				free(argv[i]);
+				argv[i] = NULL;
 				argv2[i-seppos-1] = arg2;
 				count2++;
 			}
 			free(argv[seppos]);
+			argv[seppos] = NULL;
 			count -= (count2+1);
 		}
+		
+		/*
+		printf("count is [%d] \n", count);
+		printf("count2 is [%d] \n", count2);
+		for(int i = 0; i <= count; i++){
+			printf("in argv [%d] is [%s]\n", i, argv[i]);
+		}
+		
+		for(int i = 0; i <= count2; i++){
+			printf("in argv [%d] is [%s]\n", i, argv2[i]);
+		}
+		*/
 		
 		
 		#ifdef DEBUG_MODE
@@ -188,8 +202,8 @@ int main(){
 		
 		//create the memory block for lstat and execv
 		
-		int result = -1;
-		int result2 = -1;
+		int result = 0;
+		int result2 = 0;
 		char* path = calloc(1024, sizeof(char));
 		char* path2 = calloc(1024, sizeof(char));
 		char* mypath = calloc(1024, sizeof(char));
@@ -204,8 +218,16 @@ int main(){
 				for(int i = 0; i < count; i++){
 					free(argv[i]);
 				}
+				if(multiTask == 1 && count2 > 0){
+					for(int i = 0; i < count2; i++){
+						free(argv2[i]);
+					}
+			
+				}
+				free(argv2);
 				free(argv);
 				free(path);
+				free(path2);
 				free(mypath);
 				break;
 				
@@ -219,6 +241,23 @@ int main(){
 				}else{
 					chdir(argv[1]);
 				}
+				//free the memory
+				for(int i = 0; i < count; i++){
+					free(argv[i]);
+				}
+				if(multiTask == 1 && count2 > 0){
+					for(int i = 0; i < count2; i++){
+						free(argv2[i]);
+					}
+			
+				}
+				free(argv2);
+				free(argv);
+				free(path);
+				free(path2);
+				free(mypath);
+				continue;
+				
 			}
 			//if we doesn't read Exit
 			else{
@@ -232,7 +271,8 @@ int main(){
 					mypath = strcpy(mypath, "/bin#.");
 					result = checkPath(mypath, argv[0], path);
 					
-					if(multiTask == 1){
+					if(multiTask == 1 && count2 > 0){
+						mypath = strcpy(mypath, "/bin#.");
 						result2 = checkPath(mypath, argv2[0], path2);
 					}
 					
@@ -240,26 +280,39 @@ int main(){
 				//if $MYPATH is set
 				else{
 					
-					mypath = getenv("MYPATH");
+					//do not directly assign the getenv return value to mypath
+					//that will cause the memory leak
+					mypath = strcpy(mypath,getenv("MYPATH"));
 					result = checkPath(mypath, argv[0], path);
 					
-					if(multiTask == 1){
+					if(multiTask == 1 && count2 > 0){
+						mypath = strcpy(mypath,getenv("MYPATH"));
 						result2 = checkPath(mypath, argv2[0], path2);
 					}
 				}
-				
+
 			}
 		}
 		//after checking the lstat result, start fork
 		//if there is a executable found
-		
-		if(result == 1 ){
-			
+		//we check the condition firstly
+		if(result != 1 ){
+			fprintf(stderr, "ERROR: command \"%s\" not found\n", argv[0]);
+			if(multiTask == 1 && result2 <= 0){
+				fprintf(stderr, "ERROR: command \"%s\" not found\n", argv2[0]);
+			}
+		}
+		else if(result == 1 && multiTask == 1 && result2 <= 0){
+			fprintf(stderr, "ERROR: command \"%s\" not found\n", argv2[0]);
+		}
+		else if(result == 1 ){
+			//fprintf(stderr, "the result is [%d], the result2 is [%d]\n",result, result2);
 			int p[2];
 			int rc = pipe(p);
 			
 			if(rc == -1){
 				perror("Error: Pipe Failed\n");
+				return EXIT_FAILURE;
 			}
 			
 			
@@ -276,7 +329,7 @@ int main(){
 				//in FIRST Child
 				if(multiTask == 1 && result2 == 1){
 					//if we have IPC Need
-					dup2(p[1], fileno(stdout));
+					dup2(p[1], 1);
 					close(p[0]);
 				}else{
 					//if we have no IPC needed or the second process is not valid
@@ -286,17 +339,19 @@ int main(){
 				execv(path,argv);
 			}
 			else{
-				//in the parent
-				//first child wait pid part
-				close(p[0]);
-				close(p[1]);
+				if(multiTask != 1){
+					close(p[0]);
+					close(p[1]);
+				}
+				
 				if(background == 0){
 					//if process runs foreground
-					pid_t child_pid = waitpid(pid, &status, 0);
-					printf("[process %d terminated with exit status %d]\n", child_pid, status);
+					waitpid(pid, &status, 0);
+					//printf("[process %d terminated with exit status %d]\n", child_pid, status);
 					
 				}else{
 					//if process runs background
+					printf("[running background process \"%s\"]\n",argv[0]);
 					pid_t child_pid = waitpid(pid, &status, WNOHANG);
 					has_pid1 = 1;
 					bg_pid1 = pid;
@@ -307,10 +362,11 @@ int main(){
 					}
 					
 				}
+				
 				//if there is the second child, wait pid for that
 				if(multiTask == 1 && result2 == 1){
 					//if we have valid second process and IPC needed
-					printf("bla\n");
+					
 					pid_t pid2;
 					pid2 = fork();
 					
@@ -321,15 +377,18 @@ int main(){
 					
 					if(pid2 == 0){
 						//In Second Child
-						dup2(p[0], fileno(stdin));
+						dup2(p[0], 0);
 						close(p[1]);
 						execv(path2, argv2);
 					}
 					else{
+						close(p[0]);
+						close(p[1]);
 						if(background == 0){
-							pid_t child_pid = waitpid(pid2, &status, 0);
-							printf("[process %d terminated with exit status %d]\n", child_pid, status);
+							waitpid(pid2, &status, 0);
+							//printf("[process %d terminated with exit status %d]\n", child_pid, status);
 						}else{
+							printf("[running background process \"%s\"]\n",argv2[0]);
 							pid_t child_pid = waitpid(pid, &status, WNOHANG);
 							has_pid2 = 1;
 							bg_pid2 = pid2;
@@ -343,18 +402,36 @@ int main(){
 					}
 				}
 				
+				/*
+				close(p[0]);
+				close(p[1]);
+				if(background == 0){
+					//if process runs foreground
+					waitpid(pid, &status, 0);
+					//printf("[process %d terminated with exit status %d]\n", child_pid, status);
+					
+				}else{
+					//if process runs background
+					printf("[running background process \"%s\"]\n",argv[0]);
+					pid_t child_pid = waitpid(pid, &status, WNOHANG);
+					has_pid1 = 1;
+					bg_pid1 = pid;
+					if(child_pid > 0){
+						printf("[process %d terminated with exit status %d]\n", pid, status);
+						has_pid1 = 0;
+						bg_pid1 = -1;
+					}
+					
+				}
+				*/
 				
 			}
-		}else{
-			fprintf(stderr, "ERROR: command \"%s\" not found\n", argv[0]);
 		}
-		
-		//printf("[%s]\n", rBuffer);
 		
 		for(int i = 0; i < count; i++){
 			free(argv[i]);
 		}
-		if(multiTask == 1){
+		if(multiTask == 1 && count2 > 0){
 			for(int i = 0; i < count2; i++){
 				free(argv2[i]);
 			}
@@ -365,7 +442,6 @@ int main(){
 		free(path);
 		free(path2);
 		free(mypath);
-	
 	}
 	
 	
