@@ -1,0 +1,139 @@
+[03/25/2019]
+
+        CHECK OUT THESE URLS:
+
+        https://www.cs.rpi.edu/~goldsd/upe-prog-competition.pdf
+        http://bit.ly/upe-pc-s19
+
+        http://apo.union.rpi.edu/mmoc/
+        https://www.cs.rpi.edu/~goldsd/g.jpg
+
+
+Project 1 -- due date is 11:59PM Monday 3/25
+
+Homework 3 -- due date is 11:59PM Monday 4/1
+
+================================================================
+
+NETWORK PROGRAMMING
+
+Inter-Process Communication (IPC)
+-- synchronization
+-- protocol -- how is communication going to take place
+                (what should happen when errors occur?)
+
+
+Open Systems Interconnection (OSI) Reference Model
+
+-- the ISO proposal for the standardization of various protocols
+    in computer networks
+
+-- a seven-layer protocol stack:
+
+
+  CLIENT                                       SERVER
+ -------------------                          -------------------
+  Application (e.g., HTTP) <=================> Application
+  (Presentation)                               (Presentation)
+  (Session)                                    (Session)
+  Transport (e.g., TCP, UDP) <===============> Transport
+  Network (e.g., IP) <=======================> Network
+  (Data Link)                                  (Data Link)
+  Physical (e.g., Ethernet) <================> Physical
+
+
+  CLIENT                                       SERVER
+ -------------------                          -------------------
+  Application (e.g., HTTP) <=================> Application
+  Transport (e.g., TCP, UDP) <===============> Transport
+  Network (e.g., IP) <=======================> Network
+  Physical (e.g., Ethernet) <================> Physical
+
+
+TCP vs. UDP
+
+Transmission Control Protocol (TCP)
+-- connection-oriented
+-- reliable protocol (re-send missing packets; sequencing; error checking)
+-- overhead
+
+User Datagram Protocol (UDP)
+-- connection-less
+-- unreliable protocol (no re-sending missing/dropped datagrams)
+-- low overhead
+
+Sockets-based communication
+
+-- a SOCKET is an endpoint for communication
+                  ^^^^^^^^
+
+-- sockets-based communication can be connection-oriented or connection-less
+
+-- a SERVER creates one (or more) sockets that it will then LISTEN on for
+    incoming client connection requests (TCP) or incoming datagrams (UDP)
+
+   -- the server listens on (or more) specific PORT numbers (2-byte short)
+
+   -- well-known port numbers include:
+
+      21 FTP
+      22 SSH
+      23 TELNET (not used bc we should use 22 for SSH instead)
+      25 SMTP
+      80 HTTP
+     443 HTTPS
+
+
+
+UDP SERVER example (udp-server.c)
+
+-- socket()             create a socket (endpoint) for communication
+
+-- bind()               bind to (assign) a specific port number
+                         (or let the OS assign us a port number)
+
+-- getsockname()        get socket "name" -- IP address, port number, etc.
+
+-- recvfrom()/sendto()  receive/send datagrams
+
+
+
+
+Internet Protocol (IP)
+-- IP provides host-to-host delivery service of datagrams
+-- IP is connectionless
+-- IP is unreliable (i.e., no re-sending of missing/dropped datagrams)
+
+IP addresses
+-- IP addresses are logical addresses at the Network layer
+
+An IP address contains information about what network the destination host
+ is actually on, which enables ROUTING to occur at the intermediate "hops"
+  along the path from point A to point Z
+
+  -- this encoding is embedded within each IP address
+
+  128.113.0.2 (www.rpi.edu)  ===> binary 10000000 ...
+  128.113.126.24 (www.cs.rpi.edu)
+
+
+What does the the following mean?
+ (Data Marshalling)
+
+  04/01/2010   ==> April 1, 2010         ===> YYYY-MM-DD (2010-04-01)
+               ==> January 4, 2010
+
+  int data type is 4 bytes  -- big endian vs. little endian
+
+htons() -- host-to-network-short
+htonl()
+ntohs()
+ntohl()
+
+
+Inter-Process Communication (IPC) -- we NEED the following:
+-- synchronization
+-- protocol -- how is communication going to take place
+                (what should happen when errors occur?)
+-- data marshalling
+

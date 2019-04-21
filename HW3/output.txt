@@ -1,0 +1,99 @@
+THREAD 140546041251584: Solving Sonny's knight's tour problem for a 3x4 board
+THREAD 140546041251584: 2 moves possible after move #1; creating threads...
+THREAD 140545959593728: 2 moves possible after move #4; creating threads...
+THREAD 140545951139584: 2 moves possible after move #7; creating threads...
+THREAD 140545942685440: Sonny found a full knight's tour!
+THREAD 140545951139584: Thread [140545942685440] joined (returned 12)
+THREAD 140545942685440: Sonny found a full knight's tour!
+THREAD 140545951139584: Thread [140545942685440] joined (returned 12)
+THREAD 140545959593728: Thread [140545951139584] joined (returned 12)
+THREAD 140545951139584: 2 moves possible after move #5; creating threads...
+THREAD 140545942685440: 2 moves possible after move #7; creating threads...
+THREAD 140545934231296: Dead end after move #10
+THREAD 140545942685440: Thread [140545934231296] joined (returned 10)
+THREAD 140545934231296: Dead end after move #9
+THREAD 140545942685440: Thread [140545934231296] joined (returned 9)
+THREAD 140545951139584: Thread [140545942685440] joined (returned 10)
+THREAD 140545942685440: 2 moves possible after move #9; creating threads...
+THREAD 140545934231296: Dead end after move #11
+THREAD 140545942685440: Thread [140545934231296] joined (returned 11)
+THREAD 140545934231296: Dead end after move #10
+THREAD 140545942685440: Thread [140545934231296] joined (returned 10)
+THREAD 140545951139584: Thread [140545942685440] joined (returned 11)
+THREAD 140545959593728: Thread [140545951139584] joined (returned 11)
+THREAD 140546041251584: Thread [140545959593728] joined (returned 12)
+THREAD 140545959593728: 2 moves possible after move #2; creating threads...
+THREAD 140545951139584: 2 moves possible after move #3; creating threads...
+THREAD 140545942685440: 2 moves possible after move #7; creating threads...
+THREAD 140545934231296: Dead end after move #8
+THREAD 140545942685440: Thread [140545934231296] joined (returned 8)
+THREAD 140545934231296: 2 moves possible after move #8; creating threads...
+THREAD 140545925777152: Dead end after move #9
+THREAD 140545934231296: Thread [140545925777152] joined (returned 9)
+THREAD 140545925777152: Dead end after move #10
+THREAD 140545934231296: Thread [140545925777152] joined (returned 10)
+THREAD 140545942685440: Thread [140545934231296] joined (returned 10)
+THREAD 140545951139584: Thread [140545942685440] joined (returned 10)
+THREAD 140545942685440: 2 moves possible after move #5; creating threads...
+THREAD 140545934231296: 2 moves possible after move #6; creating threads...
+THREAD 140545925777152: Dead end after move #7
+THREAD 140545934231296: Thread [140545925777152] joined (returned 7)
+THREAD 140545925777152: Dead end after move #8
+THREAD 140545934231296: Thread [140545925777152] joined (returned 8)
+THREAD 140545942685440: Thread [140545934231296] joined (returned 8)
+THREAD 140545934231296: Dead end after move #8
+THREAD 140545942685440: Thread [140545934231296] joined (returned 8)
+THREAD 140545951139584: Thread [140545942685440] joined (returned 8)
+THREAD 140545959593728: Thread [140545951139584] joined (returned 10)
+THREAD 140545951139584: 2 moves possible after move #4; creating threads...
+THREAD 140545942685440: 2 moves possible after move #5; creating threads...
+THREAD 140545934231296: Dead end after move #10
+THREAD 140545942685440: Thread [140545934231296] joined (returned 10)
+THREAD 140545934231296: Dead end after move #10
+THREAD 140545942685440: Thread [140545934231296] joined (returned 10)
+THREAD 140545951139584: Thread [140545942685440] joined (returned 10)
+THREAD 140545942685440: Dead end after move #6
+THREAD 140545951139584: Thread [140545942685440] joined (returned 6)
+THREAD 140545959593728: Thread [140545951139584] joined (returned 10)
+THREAD 140546041251584: Thread [140545959593728] joined (returned 10)
+THREAD 140546041251584: Best solution(s) found visit 12 squares (out of 12)
+THREAD 140546041251584: Dead end boards:
+THREAD 140546041251584: > [ 1][ 4][ 7][10]
+THREAD 140546041251584:   [ 6][ 9][ 2][..]
+THREAD 140546041251584:   [ 3][..][ 5][ 8]
+THREAD 140546041251584: > [ 1][ 4][ 7][..]
+THREAD 140546041251584:   [ 6][..][ 2][ 9]
+THREAD 140546041251584:   [ 3][ 8][ 5][..]
+THREAD 140546041251584: > [ 1][ 4][ 9][ 6]
+THREAD 140546041251584:   [..][ 7][ 2][11]
+THREAD 140546041251584:   [ 3][10][ 5][ 8]
+THREAD 140546041251584: > [ 1][ 4][ 9][ 6]
+THREAD 140546041251584:   [10][ 7][ 2][..]
+THREAD 140546041251584:   [ 3][..][ 5][ 8]
+THREAD 140546041251584: > [ 1][..][ 3][ 6]
+THREAD 140546041251584:   [ 8][ 5][..][..]
+THREAD 140546041251584:   [..][ 2][ 7][ 4]
+THREAD 140546041251584: > [ 1][ 8][ 3][ 6]
+THREAD 140546041251584:   [..][ 5][..][ 9]
+THREAD 140546041251584:   [..][ 2][ 7][ 4]
+THREAD 140546041251584: > [ 1][ 8][ 3][ 6]
+THREAD 140546041251584:   [..][ 5][10][..]
+THREAD 140546041251584:   [ 9][ 2][ 7][ 4]
+THREAD 140546041251584: > [ 1][ 6][ 3][..]
+THREAD 140546041251584:   [ 4][..][..][ 7]
+THREAD 140546041251584:   [..][ 2][ 5][..]
+THREAD 140546041251584: > [ 1][ 6][ 3][..]
+THREAD 140546041251584:   [ 4][..][ 8][..]
+THREAD 140546041251584:   [ 7][ 2][ 5][..]
+THREAD 140546041251584: > [ 1][..][ 3][ 6]
+THREAD 140546041251584:   [ 4][ 7][..][..]
+THREAD 140546041251584:   [..][ 2][ 5][ 8]
+THREAD 140546041251584: > [ 1][ 4][ 7][10]
+THREAD 140546041251584:   [ 6][ 9][..][ 3]
+THREAD 140546041251584:   [..][ 2][ 5][ 8]
+THREAD 140546041251584: > [ 1][ 4][ 9][ 6]
+THREAD 140546041251584:   [10][ 7][..][ 3]
+THREAD 140546041251584:   [..][ 2][ 5][ 8]
+THREAD 140546041251584: > [ 1][ 4][..][..]
+THREAD 140546041251584:   [..][..][ 6][ 3]
+THREAD 140546041251584:   [ 5][ 2][..][..]

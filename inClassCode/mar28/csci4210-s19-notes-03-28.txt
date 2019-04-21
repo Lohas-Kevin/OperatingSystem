@@ -1,0 +1,290 @@
+[03/28/2019]
+
+Homework 3 -- due date is 11:59PM Monday 4/1
+-- should be available in Submitty by the end of today
+-- use valgrind but know that pthread_exit() has some memory leak issues...
+-- thread IDs may be reused
+-- NO_PARALLEL flag:
+
+  gcc -Wall hw3.c -pthread
+  gcc -Wall -D NO_PARALLEL hw3.c -pthread
+
+  pthread_create( &tid, ... )
+
+#ifdef NO_PARALLEL
+  pthread_join( tid, ... )
+  ...
+#endif
+
+#ifndef NO_PARALLEL
+  foreach child thread i:
+    pthread_join( tid[i], ... )
+  ...
+#endif
+
+
+if running in full parallel mode, you can join the child threads
+ back to the parent thread in any order
+
+
+
+Quiz 6 will be on Monday 4/1
+-- consider this quiz a "warm-up" or practice for the exam
+-- *** this will focus primarily (but not entirely) on multi-threaded coding ***
+
+
+Exam 2 will be on Thursday 4/4
+-- sample questions etc. will be posted today
+-- focus (materials btwn Exam 1 and now):
+   -- shared memory
+   -- synchronization (incl. semaphores)
+   -- multiple threads
+   -- network programming
+
+
+        CHECK OUT THESE URLS:
+
+        https://www.cs.rpi.edu/~goldsd/upe-prog-competition.pdf
+        http://bit.ly/upe-pc-s19
+
+        http://apo.union.rpi.edu/mmoc/
+        https://www.cs.rpi.edu/~goldsd/g.jpg
+
+================================================================
+
+NETWORK PROGRAMMING
+
+Inter-Process Communication (IPC)
+-- synchronization
+-- protocol -- how is communication going to take place
+                (what should happen when errors occur?)
+-- data marshalling
+
+
+Open Systems Interconnection (OSI) Reference Model
+
+-- the ISO proposal for the standardization of various protocols
+    in computer networks
+
+-- a seven-layer protocol stack:
+
+
+  CLIENT                                       SERVER
+ -------------------                          -------------------
+  Application (e.g., HTTP) <=================> Application
+  (Presentation)                               (Presentation)
+  (Session)                                    (Session)
+  Transport (e.g., TCP, UDP) <===============> Transport
+  Network (e.g., IP) <=======================> Network
+  (Data Link)                                  (Data Link)
+  Physical (e.g., Ethernet) <================> Physical
+
+
+  CLIENT                                       SERVER
+ -------------------                          -------------------
+  Application (e.g., HTTP) <=================> Application
+  Transport (e.g., TCP, UDP) <===============> Transport
+  Network (e.g., IP) <=======================> Network
+  Physical (e.g., Ethernet) <================> Physical
+
+HTTP:
+  http://www.ietf.org/rfc/rfc2616.txt
+
+URI:
+  http://www.ietf.org/rfc/rfc2396.txt
+
+
+TCP vs. UDP
+
+Transmission Control Protocol (TCP)
+-- connection-oriented
+-- reliable protocol (re-send missing packets; sequencing; error checking)
+-- overhead
+
+User Datagram Protocol (UDP)
+-- connection-less
+-- unreliable protocol (no re-sending missing/dropped datagrams)
+-- low overhead
+
+Sockets-based communication
+
+-- a SOCKET is an endpoint for communication
+                  ^^^^^^^^
+
+-- sockets-based communication can be connection-oriented or connection-less
+
+-- a SERVER creates one (or more) sockets that it will then LISTEN on for
+    incoming client connection requests (TCP) or incoming datagrams (UDP)
+
+   -- the server listens on (or more) specific PORT numbers (2-byte short)
+
+   -- well-known port numbers include:
+
+      21 FTP
+      22 SSH
+      23 TELNET (not used bc we should use 22 for SSH instead)
+      25 SMTP
+      80 HTTP
+     443 HTTPS
+
+
+
+UDP SERVER example (udp-server.c)
+
+-- socket()             create a socket (endpoint) for communication
+
+-- bind()               bind to (assign) a specific port number
+                         (or let the OS assign us a port number)
+
+-- getsockname()        get socket "name" -- IP address, port number, etc.
+
+-- recvfrom()/sendto()  receive/send datagrams
+
+
+
+
+Internet Protocol (IP)
+-- IP provides host-to-host delivery service of datagrams
+-- IP is connectionless
+-- IP is unreliable (i.e., no re-sending of missing/dropped datagrams)
+
+IP addresses
+-- IP addresses are logical addresses at the Network layer
+
+An IP address contains information about what network the destination host
+ is actually on, which enables ROUTING to occur at the intermediate "hops"
+  along the path from point A to point Z
+
+  -- this encoding is embedded within each IP address
+
+  128.113.0.2 (www.rpi.edu)  ===> binary 10000000 ...
+  128.113.126.24 (www.cs.rpi.edu)
+
+
+What does the the following mean?
+ (Data Marshalling)
+
+  04/01/2010   ==> April 1, 2010         ===> YYYY-MM-DD (2010-04-01)
+               ==> January 4, 2010
+
+  int data type is 4 bytes  -- big endian vs. little endian
+
+htons() -- host-to-network-short
+htonl()
+ntohs()
+ntohl()
+
+
+Inter-Process Communication (IPC) -- we NEED the following:
+-- synchronization
+-- protocol -- how is communication going to take place
+                (what should happen when errors occur?)
+-- data marshalling
+
+
+================================================================
+
+TCP server:
+
+socket()              create the server-side socket (endpoint)
+bind()                bind (associate) a specific port number with the socket,
+                       which will be the listener port
+listen()              identify the socket as a TCP listener, meaning it will
+                       be ready to accept() incoming client connection requests
+
+while ( 1 )
+{
+  accept()            accept an incoming client connection request (BLOCKING)
+
+  recv()/send()       read/write data across the established connection
+  read()/write()
+
+  close()             close the socket descriptor
+}
+
+
+
+TCP client:
+
+socket()              create the client-side socket (endpoint)
+connect()             attempt to establish a connection to the specified
+                       server and port number via TCP
+
+recv()/send()         read/write data across the established connection
+read()/write()
+
+close()               close the socket descriptor
+
+
+
+
+   SERVER                                     CLIENT
+  +-------------+                           +-----------+
+  |            ===80 (HTTP)                 |           |
+  |             |                           |           |
+  |     fd 3   ===9889                41634===          |
+  |             |                           |           |
+  |             |                           |           |
+  |             |                           |           |
+  |             |                           +-----------+
+  +-------------+
+
+
+   SERVER                                     CLIENT
+  +-------------+                           +-----------+
+  |            ===80 (HTTP)                 |           |
+  |             |                           |           |
+  |     fd 3   ===9889 <==============41634===connect() |
+  |             |  accept()                 |           |
+  |             |                           |           |
+  |             |                           |           |
+  |             |                           +-----------+
+  +-------------+
+
+
+   SERVER                                     CLIENT
+  +-------------+                           +-----------+
+  |            ===80 (HTTP)                 |           |
+  |             |                           |           |
+  |     fd 3   ===9889                      |           |
+  |             |  accept()                 |           |
+  |             |                           |           |
+  |  newsd 4   ===9889================41634===read()    |
+  |    read()   |                           | write()   |
+  |   write()   |                           |           |
+  |             |                           |           |
+  |             |                           +-----------+
+  +-------------+
+
+ uniquely identify the connection:
+  (TCP, SERVER, 9889, CLIENT, 41634)
+
+   SERVER                                     CLIENT
+  +-------------+                           +-----------+
+  |            ===80 (HTTP)                 |           |
+  |             |                           |           |
+  |     fd 3   ===9889                      |           |
+  |             |  accept()                 |           |
+  |             |                           |           |
+  |  newsd 4   ===9889================41634===read()    |
+  |    read()   |                           | write()   |
+  |   write()   |                           |           |
+  |             |                           |           |
+  |  newsd 5   ===9889================54434===read()    |
+  |    read()   |                           | write()   |
+  |   write()   |                           |           |
+  |             |                           |           |
+  |             |                           +-----------+
+  +-------------+
+
+ uniquely identify the connection:
+  fd 4: (TCP, SERVER, 9889, CLIENT, 41634)
+  fd 5: (TCP, SERVER, 9889, CLIENT, 54434)
+
+
+
+
+
+
+
+

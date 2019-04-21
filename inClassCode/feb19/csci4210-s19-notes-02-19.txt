@@ -1,0 +1,153 @@
+[02/19/2019]
+
+Homework 2
+-- due date is (at least) 11:59PM on Monday 2/25
+-- re-read all specifications (before posting to Piazza)
+
+Project 1 specifications
+
+Sample Exam 1 and Quizzes 1, 2, and 3
+
+Announcement
+-- Check out HackRPI (and register now!)
+
+        https://hackrpi.com/
+
+
+=====================================================================
+
+
+ fprintf( stdout, "...\n" );
+ write( 1, "...", 3 );
+
+
+Sample Exam 1 Questions
+
+Q1.         ONE
+           /   \
+        p /     \ c
+         /       \
+       <parent> <child>
+       TWO      TWO
+       FOUR     THREE
+
+     Output lines in <parent> and <child> sections
+      will interleave with one another
+
+     You do not need to write this (it is implied):
+      (The top-to-bottom relative order of output is as shown.)
+
+
+Quiz 2 Question 4.
+
+     <parent>     <child>
+     10 4         10 4
+     square 1     you're a 10
+
+     Output lines in <parent> and <child> sections
+      will interleave with one another
+
+
+Q2.        PARENT: x is 150
+           PARENT: forking...
+          /               \
+         /                 \
+    <parent>               <child>
+    PARENT: forked...      PARENT: forked...
+      |                    CHILD: happy birthday
+      |                    CHILD: 300
+      |
+    <wait>
+      |
+      v
+    PARENT: child completed
+    PARENT: 300
+
+     Output lines in <parent> and <child> sections
+      will interleave with one another
+
+
+    How would the output change if wait() is removed?
+
+    <parent>                 <child>
+    PARENT: forked...        PARENT: forked...
+    PARENT: child completed  CHILD: happy birthday
+    PARENT: 300              CHILD: 300
+
+
+
+Q3.  a--> "POLYTECHNIC"
+           ^
+           |
+     b------
+
+     c--> "\0\0\0\0\0\0\0..." (100 bytes)
+
+
+
+         +---+
+     d-->|   |
+         +---+
+         |   |
+         +---+
+         |   |
+         +---+     c
+          ...      |
+         +---+     v
+     [6] | =====> "TECHNIC\0\0\0..." (100 bytes)
+         +---+  +--------------------+
+     [7] | ====>| ECHNIC\0           |
+         +---+  +--------------------+
+          ...
+         +---+
+         |   |
+         +---+
+
+
+
+     [C][IC][]
+     [ECHNIC][TECHNIC][IC]
+     [0.00][0.00][2.7]
+
+
+
+    free( c );
+    free( d[7] );
+    free( d );
+    free( f );
+
+
+    alternative:
+    for ( i = 0 ; i < 99 ; i++ )
+      if ( d[i] != NULL )
+        free( d[i] );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

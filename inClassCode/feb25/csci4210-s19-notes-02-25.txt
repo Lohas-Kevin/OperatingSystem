@@ -1,0 +1,128 @@
+[02/25/2019]
+
+Exam 1
+-- Hopefully grading will be done by Wednesday night
+   and we can go over Exam 1 solutions in class on Thursday
+
+Homework 2
+-- due date is 11:59PM on Thursday 2/28
+-- re-read all specifications (before posting to Piazza)
+-- check out Piazza posts for clarifications, ideas, etc.
+
+-- pipe and multiple processes (post @208 on Piazza)
+
+     ps -f | wc -l
+
+   (also see diagrams from @208 post pasted below)
+
+
+Project 1 specifications
+-- use Piazza to find team members
+
+Announcement
+-- Check out HackRPI (and register now!)
+
+        https://hackrpi.com/
+
+================================================================
+
+
+count-shm.c example:
+
+SYNCHRONIZATION
+
+-- synchronization problems are inherent to parallel programming
+    (i.e., multiple processes via fork() using shared memory
+     or shared resources, multiple threads, etc.)
+
+                  SHARED MEMORY
+                 +-------------+
+                 | shared x    | <== initially x = 5
+                 +-------------+
+
+  Process P1                      Process P2
++--------------+                +--------------+
+|              |                |              |
+| local y      |                |              |
+|              |                | local z      |
+|              |                |              |
+|              |                |              |  At <point A> and <point B>,
+|--------------|                |--------------|  what is x?  what is the output?
+> x += 4       < CRITICAL       > x++          <
+> y = x        <       SECTIONS > z = x        <  what is x?  6, 9, or 10
+|--------------|                |--------------|
+|              |                |              |
+| print x      |                | print x      |
+| print y      |                | print z      |
+|              |                |              |
+|              |                |              |
+|  <point A>   |                |  <point B>   |
++--------------+                +--------------+
+
+ The highlighted CRITICAL SECTIONS shown above
+
+ -- to synchronize these two processes, only one (and no more than one)
+    process can be in its critical section at any given time
+
+
+
+P1:
+    x += 4  ==============>  x = x + 4
+
+                             LOAD x     ; load the value of x into a register (5)
+                             ADD #4     ; add 4 to that register (9)
+                       <---- context-switch ------>
+                             STORE x    ; store the new value (9) back in x
+
+P2:
+    x++  =================>  x = x + 1
+
+                             LOAD x     ; load the value of x into a register (5)
+                             INCR       ; add 1 to that register (6)
+                             STORE x    ; store the new value (6) back in x
+
+
+
+
+
+
+
+================================================================
+
+From Piazza @208
+
+	parent
+          |
+      first fork
+         / \
+        /   \                                fork()
+1st child    \                               fork()
+ ps -f       parent                          waitpid()
+               |                             waitpid()
+           second fork
+               / \
+              /   \
+      2nd child    \                   
+       wc -l       parent:
+                   waitpid(1st child);
+                   waitpid(2nd child);
+
+
+For your Homework 2 submission on Submitty:
+
+	parent
+          |
+      first fork
+         / \
+        /   \                              fork()
+1st child    \                             waitpid()
+ ps -f       parent:                       fork()
+             waitpid(1st child);           waitpid()
+               |
+           second fork
+               / \
+              /   \
+      2nd child    \
+       wc -l       parent:
+                   waitpid(2nd child);
+

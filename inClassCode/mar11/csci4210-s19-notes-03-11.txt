@@ -1,0 +1,140 @@
+[03/11/2019]
+
+Random Number Poll:
+1 -- 4
+2 -- 10
+3 -- 14
+4 -- 14
+5 -- 6
+6 -- 10
+7 -- 30 <==== LUCKY
+8 -- 3
+9 -- 4
+10 -- 5
+
+No OpSys class this Thursday 3/14
+-- also no office hours for me Thursday 3/14
+
+Exam 1 -- has been graded in Submitty
+-- View your grade in Submitty
+-- Average 75/100 (no curve)
+---- Multiple choice (Questions 1-12) average: 75%
+---- Question 13: 63%
+---- Question 14: 92%
+
+Project 1 specifications
+-- due date is 11:59PM Monday 3/18
+-- use Piazza to find team members -- deadline 11:59PM TODAY
+-- use Submitty to define your teams
+
+Homework 3 -- multi-threaded assignment (in C using pthreads)
+
+Announcement
+-- Check out HackRPI (and register now!) -- this coming weekend
+
+        https://hackrpi.com/
+
+================================================================
+
+SYNCHRONIZATION (from last class...)
+
+-- synchronization problems are inherent to parallel programming
+    (i.e., multiple processes via fork() using shared memory
+     or shared resources, multiple threads, etc.)
+
+                  SHARED MEMORY
+                 +-------------+
+                 | shared x    | <== initially x = 5
+                 +-------------+
+
+  Process P1                      Process P2
++--------------+                +--------------+
+|              |                |              |
+| local y      |                |              |
+|              |                | local z      |
+|              |                |              |
+|              |                |              |  At <point A> and <point B>,
+|--------------|                |--------------|  what is x?  what is the output?
+> x += 4       < CRITICAL       > x++          <
+> y = x        <       SECTIONS > z = x        <  what is x?  6, 9, or 10
+|--------------|                |--------------|
+|              |                |              |
+| print x      |                | print x      |
+| print y      |                | print z      |
+|              |                |              |
+|              |                |              |
+|  <point A>   |                |  <point B>   |
++--------------+                +--------------+
+
+The highlighted CRITICAL SECTIONS shown above
+
+ -- to synchronize these two processes, only one (and no more than one)
+    process can be in its critical section at any given time
+
+A CRITICAL SECTION guarantees MUTUAL EXCLUSION among multiple processes
+ (or threads) for access to one or more shared resources (e.g., variable x)
+
+MUTUAL EXCLUSION here means that no more than one process can
+ be running in its critical section at any given time
+
+If we synchronized the critical sections in the diagram above, then
+ x would be guaranteed to be 10 when both processes get to
+  <point A> and <point B>
+
+To synchronize processes (or threads), first we must identify the
+ critical sections in the code
+
+-- the OS must control access to the critical sections by providing us
+    (as programmers) some mechanism to define the critical sections, etc.
+
+
+P1:
+    x += 4  ==============>  x = x + 4
+
+                             LOAD x     ; load the value of x into a register (5)
+                             ADD #4     ; add 4 to that register (9)
+                       <---- context-switch ------>
+                             STORE x    ; store the new value (9) back in x
+
+P2:
+    x++  =================>  x = x + 1
+
+                             LOAD x     ; load the value of x into a register (5)
+                             INCR       ; add 1 to that register (6)
+                             STORE x    ; store the new value (6) back in x
+
+================================================================
+
+Synchronization:
+(1) data synchronization
+(2) process/thread synchronization -- sequence of events
+
+
+
+Multiple threads
+-- in ONE process, we can have multiple threads of execution
+
+
+             ONE PROCESS
+  +---------------------------------+
+  |           main()                |
+  |             |                   |
+  |             |                   |
+  |             v                   |
+  |      create a few threads...    |
+  |                                 |
+  |                                 |
+  | thread1   thread2     thread3   |
+  |   |          |           |      |
+  |   |         /            |      |
+  |   |        |              \     |
+  |  /          \              \    |
+  | |            \              |   |
+  | |             v             v   |
+  | v                               |
+  |                                 |
+  | these threads join() back in    |
+  |  to the parent thread           |
+  |                                 |
+  +---------------------------------+
+
