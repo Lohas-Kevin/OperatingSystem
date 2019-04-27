@@ -5,9 +5,20 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <sys/select.h> 
+
+//HERE is the global variables for server
+char* clients[32];
+int socketArray[32];
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+typedef struct{
+	int fd;
+} clientInfo;
 
 unsigned short int checkInt(char* input){
 	/*
@@ -43,6 +54,8 @@ unsigned short int checkInt(char* input){
 }
 
 
+void * TCPService(void * arg);
+
 int main( int argc, char* argv[]){
 	
 	//here is the fd set to keep udpport and tcpport
@@ -75,7 +88,7 @@ int main( int argc, char* argv[]){
 	
 	struct sockaddr_in TCPServer;
 	TCPServer.sin_family = PF_INET;
-	TCPServer.sin_addr.s_addr = INADDR_ANY;
+	TCPServer.sin_addr.s_addr = htonl( INADDR_ANY );
 	TCPServer.sin_port = htons( port );
 	int TCPLen = sizeof( TCPServer );
 	
@@ -105,10 +118,79 @@ int main( int argc, char* argv[]){
 		return EXIT_FAILURE;
 	}
 	
+	listen( TCPSock, 32 );
+	listen( UDPSock, 32 );
 	
+	struct sockaddr_in client;
+	int fromlen = sizeof( client );
+	
+	int socketPointer = 0;
+	
+	while(1){
+		
+		FD_ZERO( &readfds );
+		FD_SET( TCPSock, &readfds );
+		FD_SET( UDPSock, &readfds );
+		
+		select( FD_SETSIZE, &readfds, NULL, NULL, NULL );
+		
+		//check the connection type
+		if( FD_ISSET( TCPSock, &readfds ) ){
+			
+			//if it is a TCP client
+			//accept then create a new thread to deal with it
+			int newSock = accept( TCPSock, (struct sockaddr *)&client, (socklen_t *)&fromlen );
+			printf("accept the client, socket fd is %d\n", newSock);
+			
+			pthread_t tid;
+			int rc;
+			rc = pthread_create(&tid, NULL, TCPService, &newSock);
+			if( rc != 0 ){
+				fprintf(stderr, "MAIN: ERROR failed to create the thread\n");
+				return EXIT_FAILURE;
+			}
+			
+		}
+		
+	}
 	
 	return EXIT_SUCCESS;
 	
+}
+
+void* TCPService( void* arg ){
+	
+	char* buffer = calloc( 1024, sizeof(char) );
+	int newSock = *((int*) arg);
+	pthread_detach(pthread_self());
+	int n = 0;
+	
+	do{
+		n = recv( newSock, buffer, 1023, 0 );
+		
+		if( n == -1 ){
+			fprintf( stderr, "CHILD: ERROR failed to receive message\n" );
+		}
+		else if ( n == 0 ){
+			printf( "SERVER: Rcvd 0 from recv(); closing socket...\n" );
+		}
+		else{
+			buffer[n] = '\0';
+			printf( "SERVER: Rcvd message: %s\n", buffer );
+			n = send ( newSock, "ACK\n", 4, 0 ); 
+
+		}
+		
+		
+		
+	}
+	while(n > 0);
+	
+	close( newSock );
+	free(buffer);
+	
+	pthread_exit( EXIT_SUCCESS );
+
 }
 
 
