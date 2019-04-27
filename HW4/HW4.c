@@ -18,6 +18,8 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct{
 	int fd;
+	int clientNo;
+	
 } clientInfo;
 
 unsigned short int checkInt(char* input){
