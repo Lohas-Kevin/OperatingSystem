@@ -13,7 +13,8 @@
 //HERE is the global variables for server
 //the client name and the fd num of that client should have same index
 char* clients[32];
-int socketArray[32];
+int socketArray[32]; 
+int clientPointer = 0;
 int socketPointer = 0;
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -114,6 +115,9 @@ int checkNameExist( char* name ){
 
 int checkNameValid( char* name ){
 	//we will check the name here
+	if(name == NULL){
+		return -1;
+	}
 	if(strlen(name) < 4 || strlen(name) > 16){
 		printf("the invalid name is [%s]\n", name);
 		return -1;
@@ -214,10 +218,11 @@ int login( char* name, int fd ){
 	char* temp = calloc(17, sizeof(char));
 	temp = strcpy(temp, name);
 	clients[pos] = temp;
+	clientPointer += 1;
 	
 	pthread_mutex_unlock(&mutex);
 	
-	//this means the 
+	//this means add success
 	return 0;
 	
 }
@@ -368,6 +373,7 @@ void* TCPService( void* arg ){
 	
 	pthread_detach(pthread_self());
 	int n = 0;
+	int logged = 0;
 	
 	do{
 		//read the instruction
@@ -405,6 +411,11 @@ void* TCPService( void* arg ){
 				}else{
 					//success
 					n = send(newSock, "OK!\n", 4, 0);
+					//mark this client as logedin
+					//this boolean is used to avoid
+					//mis-deletion of name if the 
+					//client has not logged in
+					logged = 1;
 				}
 			}
 			else if(result == 0){
@@ -419,12 +430,12 @@ void* TCPService( void* arg ){
 
 		}
 		
-		/*
+		
 		printf("now the clents are: \n");
 		printClients();
 		printf("now the Sockets are: \n");
 		printSockets();
-		*/
+		
 		
 	}
 	while(n > 0);
@@ -437,16 +448,24 @@ void* TCPService( void* arg ){
 	int tp = checkPos( newSock );
 	
 	close(newSock);
-	free(clients[tp]);
 	
-	for(int i = tp; i < (socketPointer-1); i++){
-		clients[i] = clients[i+1];
-		socketArray[i] = socketArray[i+1];
-		clients[socketPointer] = 0;
-		socketArray[socketPointer] = 0;
-		socketPointer -= 1;
+	//if this client is logged in
+	//we need to delete the name
+	if(logged == 1){
+		free(clients[tp]);
+		for(int i = tp; i < (socketPointer-1); i++){
+			socketArray[i] = socketArray[i+1];	
+		}
+		clientPointer -= 1;
+		clients[clientPointer] = NULL;
 	}
 	
+	//delete the fd
+	for(int i = tp; i < (clientPointer-1); i++){
+		clients[i] = clients[i+1];
+	}
+	socketPointer -= 1;
+	socketArray[socketPointer] = 0;
 	pthread_mutex_unlock(&mutex);
 	
 	free( buffer );
