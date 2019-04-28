@@ -11,6 +11,7 @@
 #include <sys/select.h> 
 
 //HERE is the global variables for server
+//the client name and the fd num of that client should have same index
 char* clients[32];
 int socketArray[32];
 int socketPointer = 0;
@@ -27,6 +28,27 @@ typedef struct{
 	char** argv;
 	int argc;
 } argument;
+
+//helper functions
+void printClients(){
+	pthread_mutex_lock(&mutex);
+	for(int i = 0; i < 32; i++){
+		if(clients[i] != NULL){
+			printf("[%s] ", clients[i]);
+		}
+	}
+	printf("\n");
+	pthread_mutex_unlock(&mutex);
+}
+
+void printSockets(){
+	pthread_mutex_lock(&mutex);
+	for(int i = 0; i < 32; i++){
+		printf("[%d] ", socketArray[i]);
+	}
+	printf("\n");
+	pthread_mutex_unlock(&mutex);
+}
 
 unsigned short int checkInt(char* input){
 	/*
@@ -61,6 +83,52 @@ unsigned short int checkInt(char* input){
 	
 }
 
+int checkPos( int fd ){
+	//NOTE: this function should be run under mutex lock
+	int pos = -1;
+	for(int i = 0; i < 32; i++){
+		if(socketArray[i] == fd){
+			pos = i;
+			break;
+		}
+	}
+	
+	return pos;	
+}
+
+int checkNameExist( char* name ){
+	int result = 0;
+	//NOTE: this function should be run under mutex lock
+	for(int i = 0; i < 32; i++){
+		if(clients[i] != NULL){
+			if(strcmp(name, clients[i]) == 0){
+				result = 1;
+				break;
+			}
+		}
+		
+	}
+	
+	return result;
+}
+
+int checkNameValid( char* name ){
+	//we will check the name here
+	if(strlen(name) < 4 || strlen(name) > 16){
+		printf("the invalid name is [%s]\n", name);
+		return -1;
+	}
+	for(int i = 0; i < strlen(name); i++){
+		if(isalnum( name[i] ) == 0){
+			//failed the alnum test
+			printf("the invalid name is [%s]\n", name);
+			return -1;
+		}
+	}
+	
+	return 0;
+}
+
 
 argument* readCommand( char* input ){
 	/*
@@ -75,6 +143,13 @@ argument* readCommand( char* input ){
 	result -> argc = 0;
 	
 	token = strtok(input, " ");
+	//if read nothing
+	if(token == NULL){
+		free(result->argv);
+		free(result);
+		return NULL;
+	}
+	
 	while( token != NULL ){
 		char* temp = calloc( 64, sizeof(char) );
 		temp = strcpy(temp, token);
@@ -85,6 +160,69 @@ argument* readCommand( char* input ){
 	
 	return result;
 }
+
+int commandHandeler( argument* arg ){
+	//make sure the input is valid
+	if(arg == NULL){
+		//invalid argument, there is no infomation
+		return -1;
+	}
+	
+	//check the command
+	if(strcmp(arg->argv[0], "LOGIN") == 0){
+		return 1;
+	}
+	
+	//this should be UNKNOWN Command
+	return 0;
+}
+
+
+
+int login( char* name, int fd ){
+	//this function will do the login
+	int pos;
+	
+	pthread_mutex_lock(&mutex);
+	//IMPORTANT: over here, cause the client will change
+	//so we will get the index by fd number every time 
+	//we want to access name
+	
+	pos = checkPos(fd);
+	
+	if(pos == -1){
+		pthread_mutex_unlock(&mutex);
+		//return 0 means fd is not found in fd array
+		return -1;
+	}
+	
+	if( checkNameValid(name) == -1 ){
+		pthread_mutex_unlock(&mutex);
+		//return 1 means name is not valid
+		return 1;
+	}
+	
+	if( checkNameExist(name) == 1 ){
+		pthread_mutex_unlock(&mutex);
+		//return 2 means name is occupied
+		return 2;
+	}
+	
+	//if passed all the test
+	//add the name to the pos, with the same index
+	//of the fd num that client has
+	char* temp = calloc(17, sizeof(char));
+	temp = strcpy(temp, name);
+	clients[pos] = temp;
+	
+	pthread_mutex_unlock(&mutex);
+	
+	//this means the 
+	return 0;
+	
+}
+
+
 
 
 void freeArgument( argument* arg ){
@@ -193,16 +331,26 @@ int main( int argc, char* argv[]){
 			
 			pthread_t tid;
 			int rc;
-			rc = pthread_create(&tid, NULL, TCPService, &ci);
-			if( rc != 0 ){
-				fprintf(stderr, "MAIN: ERROR failed to create the thread\n");
-				return EXIT_FAILURE;
-			}
 			
 			pthread_mutex_lock(&mutex);
 			socketArray[socketPointer] = newSock;
 			socketPointer += 1;
 			pthread_mutex_unlock(&mutex);
+			
+			rc = pthread_create(&tid, NULL, TCPService, &ci);
+			if( rc != 0 ){
+				//it is safe to add fd table first, because if this 
+				//chunk of code is run, the whole program will be 
+				//terminated and we don't need to worry about the
+				//not working fd 
+				//
+				//also, we should add the fd first, or there maybe 
+				//a possibility that, the child thread will access
+				//to the socketArray without the target fd table in
+				//that and cause some problem
+				fprintf(stderr, "MAIN: ERROR failed to create the thread\n");
+				return EXIT_FAILURE;
+			}
 			
 		}
 		
@@ -222,6 +370,7 @@ void* TCPService( void* arg ){
 	int n = 0;
 	
 	do{
+		//read the instruction
 		n = recv( newSock, buffer, 1023, 0 );
 		
 		if( n == -1 ){
@@ -233,16 +382,73 @@ void* TCPService( void* arg ){
 			ci.clientNo+1 );
 		}
 		else{
-			buffer[n] = '\0';
-			printf( "CHILD %d: Rcvd message: %s\n",ci.clientNo+1 ,buffer );
-			n = send ( newSock, "ACK\n", 4, 0 ); 
+			//over here, we will move n up a bit 
+			//so we will overwrite that \n
+			buffer[n-1] = '\0';
+			argument* arg = readCommand( buffer );
+			int result = commandHandeler(arg);
+			printf("the handeler result is [%d]\n", result);
+			
+			if( result == 1 ){
+				//if log in request
+				printf("CHILD %d: Rcvd LOGIN request for userid %s\n",
+				ci.clientNo + 1, arg->argv[1] );
+				int lr = login(arg->argv[1], ci.fd );
+				
+				//check the login result 
+				if(lr == 2 ){
+					//name is uesd
+					printf("CHILD %d: ERROR Already connected\n", ci.clientNo+1);
+				}else if(lr == 1){
+					//name is not valid
+					printf("CHILD %d: ERROR Invalid userid\n", ci.clientNo+1);
+				}else{
+					//success
+					n = send(newSock, "OK!\n", 4, 0);
+				}
+			}
+			else if(result == 0){
+				printf("CHILD %d: ERROR Invalid argument\n", ci.clientNo+1);
+			}
+			
+			//after reading, free the argument
+			if(result != -1){
+				freeArgument(arg);
+			}
+			
 
 		}
+		
+		/*
+		printf("now the clents are: \n");
+		printClients();
+		printf("now the Sockets are: \n");
+		printSockets();
+		*/
 		
 	}
 	while(n > 0);
 	
-	close( newSock );
+	//need to do more specific memory clean here
+	
+	pthread_mutex_lock(&mutex);
+	//over here, we do the decreament to the
+	//two global arrays
+	int tp = checkPos( newSock );
+	
+	close(newSock);
+	free(clients[tp]);
+	
+	for(int i = tp; i < (socketPointer-1); i++){
+		clients[i] = clients[i+1];
+		socketArray[i] = socketArray[i+1];
+		clients[socketPointer] = 0;
+		socketArray[socketPointer] = 0;
+		socketPointer -= 1;
+	}
+	
+	pthread_mutex_unlock(&mutex);
+	
 	free( buffer );
 	
 	pthread_exit( EXIT_SUCCESS );

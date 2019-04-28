@@ -10,6 +10,8 @@
 #include <ctype.h>
 #include <sys/select.h> 
 
+int clients[32];
+
 typedef struct{
 	char** argv;
 	int argc;
@@ -28,6 +30,11 @@ argument* readCommand( char* input ){
 	result -> argc = 0;
 	
 	token = strtok(input, " ");
+	if(token == NULL){
+		free(result -> argv);
+		free(result);
+		return NULL;
+	}
 	while( token != NULL ){
 		char* temp = calloc( 64, sizeof(char) );
 		temp = strcpy(temp, token);
@@ -47,16 +54,48 @@ void freeArgument( argument* arg ){
 	free(arg);
 }
 
+
+
+int commandHandeler( argument* arg ){
+	//make sure the input is valid
+	if(arg == NULL){
+		return -1;
+	}
+	
+	//check the command
+	if(strcmp(arg->argv[0], "LOGIN") == 0){
+		return 1;
+	}
+	
+	return 0;
+}
+
+int checkName( char* name ){
+	//we will check the name here
+	if(strlen(name) < 4 || strlen(name) > 16){
+		return -1;
+	}
+	for(int i = 0; i < strlen(name); i++){
+		if(isalnum( name[i] ) == 0){
+			//failed the alnum test
+			return -1;
+		}
+	}
+	
+	return 0;
+}
+
+
 int main(){
 	
 	
-	char str[] = "LOGIN MEME";
+	char str[] = "           ";
 	
 	argument* temp = readCommand(str);
 	
-	for(int i = 0; i < temp->argc; i++){
-		printf("[%s]\n", temp->argv[i]);
-	}
+	printf("the result of CommandHandeler is [%d]\n", commandHandeler(temp) );
+	//printf("the result of checkName for MEME is [%d]\n", checkName(temp->argv[1]) );
 	
-	freeArgument(temp);
+	
+	//freeArgument(temp);
 }
