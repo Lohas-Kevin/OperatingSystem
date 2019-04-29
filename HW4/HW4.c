@@ -30,27 +30,6 @@ typedef struct{
 	int argc;
 } argument;
 
-//helper functions
-void printClients(){
-	pthread_mutex_lock(&mutex);
-	for(int i = 0; i < 32; i++){
-		if(clients[i] != NULL){
-			printf("[%s] ", clients[i]);
-		}
-	}
-	printf("\n");
-	pthread_mutex_unlock(&mutex);
-}
-
-void printSockets(){
-	pthread_mutex_lock(&mutex);
-	for(int i = 0; i < 32; i++){
-		printf("[%d] ", socketArray[i]);
-	}
-	printf("\n");
-	pthread_mutex_unlock(&mutex);
-}
-
 unsigned short int checkInt(char* input){
 	/*
 		this is the helper function from HW3
@@ -84,6 +63,53 @@ unsigned short int checkInt(char* input){
 	
 }
 
+int checkMsgLen(char* input){
+	
+	for(int i = 0; i < strlen(input); i++){
+		if( isdigit(input[i]) == 0 ){
+			return -1;
+		}
+		
+	}
+	int temp = atoi(input);
+	return temp;
+	
+}
+
+long int checkMsgLenLong(char* input){
+	for(int i = 0; i < strlen(input); i++){
+		if( isdigit(input[i]) == 0 ){
+			return -1;
+		}
+		
+	}
+	long temp = atol(input);
+	return temp;
+}
+
+//Viewer functions
+void printClients(){
+	//NOTE: this function should be run under mutex lock
+	for(int i = 0; i < 32; i++){
+		if(clients[i] != NULL){
+			printf("[%s] ", clients[i]);
+		}else{
+			printf("[ ] ");
+		}
+	}
+	printf("\n");
+}
+
+void printSockets(){
+	//NOTE: this function should be run under mutex lock
+	for(int i = 0; i < 32; i++){
+		printf("[%d] ", socketArray[i]);
+	}
+	printf("\n");
+}
+
+
+//helper functions
 int checkPos( int fd ){
 	//NOTE: this function should be run under mutex lock
 	int pos = -1;
@@ -95,6 +121,24 @@ int checkPos( int fd ){
 	}
 	
 	return pos;	
+}
+
+int namePos( char* name ){
+	//NOTE: this function should be run under mutex lock
+	int pos = -1;
+	
+	for(int i = 0; i < 32; i++){
+		if(clients[i] != NULL){
+			if( strcmp( clients[i], name ) == 0 ){
+				pos = i;
+				break;
+			}
+		}
+		
+	}
+	
+	return pos;
+	
 }
 
 int checkNameExist( char* name ){
@@ -119,19 +163,20 @@ int checkNameValid( char* name ){
 		return -1;
 	}
 	if(strlen(name) < 4 || strlen(name) > 16){
-		printf("the invalid name is [%s]\n", name);
+		//printf("the invalid name is [%s]\n", name);
 		return -1;
 	}
 	for(int i = 0; i < strlen(name); i++){
 		if(isalnum( name[i] ) == 0){
 			//failed the alnum test
-			printf("the invalid name is [%s]\n", name);
+			//printf("the invalid name is [%s]\n", name);
 			return -1;
 		}
 	}
 	
 	return 0;
 }
+
 
 
 argument* readCommand( char* input ){
@@ -171,11 +216,35 @@ int commandHandeler( argument* arg ){
 		//invalid argument, there is no infomation
 		return -1;
 	}
+	if(strcmp(arg -> argv[0], "DEBUG" ) == 0){
+		return -2;
+	}
 	
 	//check the command
 	if(strcmp(arg->argv[0], "LOGIN") == 0){
 		return 1;
 	}
+	
+	if(strcmp(arg->argv[0], "WHO") == 0){
+		return 2;
+	}
+	
+	if(strcmp(arg->argv[0], "LOGOUT") == 0){
+		return 3;
+	}
+	
+	if(strcmp(arg->argv[0], "SEND") == 0){
+		return 4;
+	}
+	
+	if(strcmp(arg->argv[0], "BROADCAST") == 0){
+		return 5;
+	}
+	
+	if(strcmp(arg->argv[0], "SHARE") == 0){
+		return 6;
+	}
+	
 	
 	//this should be UNKNOWN Command
 	return 0;
@@ -227,7 +296,114 @@ int login( char* name, int fd ){
 	
 }
 
+int comparator(const void* a, const void* b){
+	char* l = (char*)a;
+	char* r = (char*)b;
+	return strcmp(l,r);
+}
 
+char** getWhoArray(){
+	
+	pthread_mutex_lock(&mutex);
+	
+	//if there is no logged in client
+	if(clientPointer == 0){
+		pthread_mutex_unlock(&mutex);
+		return NULL;
+	}
+	
+	char** ta = calloc(clientPointer, sizeof(char*));
+	int tp = 0;
+	for(int i = 0; i < 32; i++){
+		if(clients[i] != NULL){
+			char* temp = calloc(17, sizeof(char));
+			temp = strcpy(temp, clients[i]);
+			ta[tp] = temp;
+			tp += 1;
+		}
+	}
+	
+	qsort( (void*)ta, tp, sizeof(char*), comparator );
+	pthread_mutex_unlock(&mutex);
+	
+	return ta;
+	
+}
+
+
+int sendCheck(char* name, char* length){
+	
+	if( name == NULL || length == NULL ){
+		return -1;
+	}
+	
+	pthread_mutex_lock(&mutex);
+	if( namePos(name) == -1 ){
+		pthread_mutex_unlock(&mutex);
+		//we didn't find that active name
+		return -2;
+	}
+	pthread_mutex_unlock(&mutex);
+	
+	if( checkMsgLen( length ) == -1 || checkMsgLen( length ) > 990 ||
+		checkMsgLen( length ) < 1 ){
+		//the length is not valid
+		return -3;
+	}
+	
+	//finally, we find the fd we want 
+	pthread_mutex_lock(&mutex);
+	int pos = namePos(name);
+	int fd = socketArray[pos];
+	pthread_mutex_unlock(&mutex);
+	
+	return fd;
+		
+}
+
+int broadcastCheck( char* length ){
+	if( length == NULL ){
+		return -1;
+	}
+	
+	if( checkMsgLen( length ) == -1 || checkMsgLen( length ) > 990 ||
+		checkMsgLen( length ) < 1 ){
+		//the length is not valid
+		return -2;
+	}
+	
+	//success
+	return 0;
+}
+
+int shareCheck(char* name, char* length){
+	
+	if( name == NULL || length == NULL ){
+		return -1;
+	}
+	
+	pthread_mutex_lock(&mutex);
+	if( namePos(name) == -1 ){
+		pthread_mutex_unlock(&mutex);
+		//we didn't find that active name
+		return -2;
+	}
+	pthread_mutex_unlock(&mutex);
+	
+	if( checkMsgLenLong( length ) == -1 ){
+		//the length is not valid
+		return -3;
+	}
+	
+	//finally, we find the fd we want 
+	pthread_mutex_lock(&mutex);
+	int pos = namePos(name);
+	int fd = socketArray[pos];
+	pthread_mutex_unlock(&mutex);
+	
+	return fd;
+		
+}
 
 
 void freeArgument( argument* arg ){
@@ -374,26 +550,30 @@ void* TCPService( void* arg ){
 	pthread_detach(pthread_self());
 	int n = 0;
 	int logged = 0;
+	char* name = calloc(17, sizeof(char));
 	
 	do{
 		//read the instruction
 		n = recv( newSock, buffer, 1023, 0 );
 		
 		if( n == -1 ){
-			fprintf( stderr, "TCP Client #%d: ERROR failed to receive message\n", 
+			fprintf( stderr, "CHILD %d: ERROR failed to receive message\n", 
 			ci.clientNo+1 );
 		}
+		//close socket
 		else if ( n == 0 ){
-			printf( "CHILD %d: Rcvd 0 from recv(); closing socket...\n", 
+			printf( "CHILD %d: Client disconnected\n", 
 			ci.clientNo+1 );
 		}
+		//receive info
 		else{
 			//over here, we will move n up a bit 
 			//so we will overwrite that \n
+			//since every COMMAND will end with \n
+			//it is safe to directly move up a bit
 			buffer[n-1] = '\0';
 			argument* arg = readCommand( buffer );
 			int result = commandHandeler(arg);
-			printf("the handeler result is [%d]\n", result);
 			
 			if( result == 1 ){
 				//if log in request
@@ -404,10 +584,14 @@ void* TCPService( void* arg ){
 				//check the login result 
 				if(lr == 2 ){
 					//name is uesd
-					printf("CHILD %d: ERROR Already connected\n", ci.clientNo+1);
+					printf("CHILD %d: Sent Error (Already connected)\n",
+					ci.clientNo+1);
+					send(newSock, "ERROR Already connected\n", 24, 0 );
 				}else if(lr == 1){
 					//name is not valid
-					printf("CHILD %d: ERROR Invalid userid\n", ci.clientNo+1);
+					printf("CHILD %d: Sent Error (Invalid userid)\n",
+					ci.clientNo+1);
+					send(newSock, "ERROR Invalid userid\n",21, 0);
 				}else{
 					//success
 					n = send(newSock, "OK!\n", 4, 0);
@@ -416,10 +600,236 @@ void* TCPService( void* arg ){
 					//mis-deletion of name if the 
 					//client has not logged in
 					logged = 1;
+					name = strcpy(name, arg->argv[1]);
 				}
 			}
+			else if(result == 2 && logged == 1){
+				//if received who
+				printf("CHILD %d: Rcvd WHO request\n", ci.clientNo+1);
+				char** tempArray = getWhoArray();
+				int len = 0;
+				if(tempArray != NULL){
+					//if there is a valid array
+					pthread_mutex_lock(&mutex);
+					len = clientPointer;
+					pthread_mutex_unlock(&mutex);
+					
+					send(newSock, "OK!\n", 4, 0);
+					for(int i = 0; i < len; i++){
+						send( newSock, tempArray[i], sizeof(tempArray[i]), 0 );
+						send( newSock, "\n", 1, 0 );
+					}
+					
+				}else{
+					//if the array is not valid
+					send(newSock, "OK!\n", 4, 0);
+				}
+				
+				//clean up the temp array
+				for(int i = 0; i < len; i++){
+					free(tempArray[i]);
+				}
+				free(tempArray);
+			}
+			else if(result == 3 && logged == 1){
+				//log out will only remove the name
+				printf("CHILD %d: Rcvd LOGOUT request\n", ci.clientNo+1);
+				logged = 0;
+				free(name);
+				name = calloc(17, sizeof(char));
+				pthread_mutex_lock(&mutex);
+				
+				int tp = checkPos( newSock );
+				free(clients[tp]);
+				
+				for(int i = tp; i < (clientPointer-1); i++){
+					clients[i] = clients[i+1];
+						
+				}
+				clientPointer -= 1;
+				clients[clientPointer] = NULL;
+						
+				pthread_mutex_unlock(&mutex);
+				send(newSock, "OK!\n", 4, 0);
+				
+			}
+			else if(result == 4 && logged == 1){
+				//here is the send command
+				int r = sendCheck(arg->argv[1], arg->argv[2]);
+				//handel the result
+				if( r == -1 ){
+					printf("CHILD %d: Sent Error (Invalid SEND format)\n",
+					ci.clientNo+1);
+					send(newSock, "ERROR Invalid SEND format\n",26,0);
+				}
+				else if( r == -2 ){
+					printf("CHILD %d: Sent Error (Unknown userid)\n",
+					ci.clientNo+1);
+					send(newSock, "ERROR Unknown userid\n", 21,0);
+				}
+				else if( r == -3 ){
+					printf("CHILD %d: Sent Error (Invalid msglen)\n",
+					ci.clientNo+1);
+					send(newSock, "ERROR Invalid msglen\n",21,0);
+					
+				}else{
+					//over here, read the info
+					//create temp variables
+					printf("CHILD %d: Rcvd SEND request to userid %s\n",
+					ci.clientNo+1, arg->argv[1]);
+					send(newSock, "OK!\n", 4, 0);
+					
+					int count = 0;
+					int total = atoi(arg->argv[2]);
+					int read = 0;
+					char* tb = calloc(total, sizeof(char));
+					
+					//create loop to read
+					do{
+						read = recv(newSock, (tb+count), total, 0 );
+						//printf("SERVER: i recived [%s]", tb+count);
+						count += read;
+					}
+					while(count < total);
+					//after read
+					send(r, "FROM ", 5, 0);
+					send(r, name, strlen(name), 0);
+					send(r, " ", 1, 0);
+					send(r, arg->argv[2], strlen(arg->argv[2]), 0 );
+					send(r, " ", 1, 0);
+					send(r, tb, total, 0);
+					
+					//after send, free the memory
+					free(tb);
+					
+				}
+				
+			}
+			//broadcast request
+			else if(result == 5 && logged == 1){
+				int r = broadcastCheck( arg->argv[1] );
+				if( r == -1 ){
+					printf("CHILD %d: Sent Error (Invalid Broadcast format)\n",
+					ci.clientNo+1);
+					send(newSock, "ERROR Invalid BROADCAST format\n",31,0);
+				}
+				else if( r == -2 ){
+					printf("CHILD %d: Sent Error (Invalid msglen)\n",
+					ci.clientNo+1);
+					send(newSock, "ERROR Invalid msglen\n",21,0);
+				}
+				else if( r == 0 ){
+					//successfully received the request
+					printf("CHILD %d: Rcvd BROADCAST request\n", ci.clientNo+1);
+					send(newSock, "OK!\n", 4, 0);
+					
+					//read the info
+					int count = 0;
+					int total = atoi(arg->argv[1]);
+					int read = 0;
+					char* tb = calloc(total, sizeof(char));
+					
+					//create loop to read
+					do{
+						read = recv(newSock, (tb+count), total, 0 );
+						//printf("SERVER: i recived [%s]", tb+count);
+						count += read;
+					}
+					while(count < total);
+		
+					//after read
+					pthread_mutex_lock(&mutex);
+					for(int i = 0; i < 32; i++){
+						//check active user
+						if(clients[i] != NULL){
+							//if active user is there
+							int tfd = socketArray[i];
+							send(tfd, "BROADCAST ", 10, 0);
+							send(tfd, name, strlen(name), 0);
+							send(tfd, " ", 1, 0);
+							send(tfd, arg->argv[1], strlen(arg->argv[1]), 0 );
+							send(tfd, " ", 1, 0);
+							send(tfd, tb, total, 0);
+						}
+					}
+					pthread_mutex_unlock(&mutex);
+					
+					
+					//after broadcast, free the memory
+					free(tb);
+					
+				}
+				
+			}
+			//share request
+			else if(result == 6 && logged == 1){
+				int r = shareCheck(arg->argv[1], arg->argv[2]);
+				if( r == -1 ){
+					printf("CHILD %d: Sent Error (Invalid SHARE format)\n",
+					ci.clientNo+1);
+					send(newSock, "ERROR Invalid SHARE format\n",27,0);
+				}
+				else if( r == -2 ){
+					printf("CHILD %d: Sent Error (Unknown userid)\n",
+					ci.clientNo+1);
+					send(newSock, "ERROR Unknown userid\n", 21,0);
+				}
+				else if( r == -3 ){
+					printf("CHILD %d: Sent Error (Invalid msglen)\n",
+					ci.clientNo+1);
+					send(newSock, "ERROR Invalid msglen\n",21,0);
+				}
+				else{
+					printf("CHILD %d: Rcvd SHARE request to userid %s\n",
+					ci.clientNo+1, arg->argv[1]);
+					send(newSock, "OK!\n", 4, 0);
+					
+					send(r, "SHARE ", 6, 0);
+					send(r, name, strlen(name), 0);
+					send(r, " ", 1, 0);
+					send(r, arg->argv[2], strlen(arg->argv[2]), 0 );
+					send(r, "\n", 1, 0);
+					
+					long count = 0;
+					long total = atol(arg->argv[2]);
+					int read = 0;
+					char* tb = calloc(1024, sizeof(char));
+					
+					//create loop to read
+					do{
+						read = recv(newSock, tb, 1024, 0 );
+						send(newSock, "OK!\n", 4, 0);
+						count += read;
+						send(r, tb, read, 0);
+					}
+					while(count < total);
+					
+					//after send, free the memory
+					free(tb);
+					
+				}
+			}
+			//unknown input
 			else if(result == 0){
-				printf("CHILD %d: ERROR Invalid argument\n", ci.clientNo+1);
+				//this is for unknown command
+				printf("CHILD %d: Sent ERROR (Invalid argument)\n", ci.clientNo+1);
+				send(newSock, "ERROR Invalid argument\n",23,0);
+			}
+			else if(result == -2){
+				//this is for debug
+				pthread_mutex_lock(&mutex);
+				printf("now the clents are: \n");
+				printClients();
+				printf("now the Sockets are: \n");
+				printSockets();
+				pthread_mutex_unlock(&mutex);
+				
+			}
+			//this branch is used to solve the clients
+			//which is not connected, except NULL passed in
+			else if(result != -1){
+				printf("CHILD %d: Sent ERROR (Invalid argument)\n", ci.clientNo+1);
+				send(newSock, "ERROR Log in first\n",19,0);
 			}
 			
 			//after reading, free the argument
@@ -427,14 +837,10 @@ void* TCPService( void* arg ){
 				freeArgument(arg);
 			}
 			
+			
 
 		}
 		
-		
-		printf("now the clents are: \n");
-		printClients();
-		printf("now the Sockets are: \n");
-		printSockets();
 		
 		
 	}
@@ -453,22 +859,24 @@ void* TCPService( void* arg ){
 	//we need to delete the name
 	if(logged == 1){
 		free(clients[tp]);
-		for(int i = tp; i < (socketPointer-1); i++){
-			socketArray[i] = socketArray[i+1];	
+		for(int i = tp; i < (clientPointer-1); i++){
+			clients[i] = clients[i+1];
+				
 		}
 		clientPointer -= 1;
 		clients[clientPointer] = NULL;
 	}
 	
 	//delete the fd
-	for(int i = tp; i < (clientPointer-1); i++){
-		clients[i] = clients[i+1];
+	for(int i = tp; i < (socketPointer-1); i++){
+		socketArray[i] = socketArray[i+1];
 	}
 	socketPointer -= 1;
 	socketArray[socketPointer] = 0;
 	pthread_mutex_unlock(&mutex);
 	
 	free( buffer );
+	free( name );
 	
 	pthread_exit( EXIT_SUCCESS );
 

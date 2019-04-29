@@ -10,7 +10,7 @@
 #include <ctype.h>
 #include <sys/select.h> 
 
-int clients[32];
+char* clients[32];
 
 typedef struct{
 	char** argv;
@@ -85,16 +85,68 @@ int checkName( char* name ){
 	return 0;
 }
 
+int checkMsgLen(char* input){
+	
+	for(int i = 0; i < strlen(input); i++){
+		if( isdigit(input[i]) == 0 ){
+			return -1;
+		}
+		
+	}
+	int temp = atoi(input);
+	return temp;
+	
+}
+
+int namePos( char* name ){
+	//NOTE: this function should be run under mutex lock
+	int pos = -1;
+	
+	for(int i = 0; i < 32; i++){
+		if(clients[i] != NULL){
+			if( strcmp( clients[i], name ) == 0 ){
+				pos = i;
+				break;
+			}
+		}
+		
+	}
+	
+	return pos;
+	
+}
+
+int sendCheck(char* name, char* length){
+	
+	if( name == NULL || length == NULL ){
+		return -1;
+	}
+	
+	if( namePos(name) == -1 ){
+		//we didn't find that active name
+		return -2;
+	}
+	
+	if( checkMsgLen( length ) == -1 || checkMsgLen( length ) > 990 ||
+		checkMsgLen( length ) < 1 ){
+		//the length is not valid
+		return -3;
+	}
+	
+	int fd = namePos(name);
+	return fd;
+		
+}
+
 
 int main(){
 	
 	
-	char str[] = "           ";
+	clients[1] = "MEME";
 	
-	argument* temp = readCommand(str);
+	//argument* temp = readCommand(str);
 	
-	printf("the result of CommandHandeler is [%d]\n", commandHandeler(temp) );
-	//printf("the result of checkName for MEME is [%d]\n", checkName(temp->argv[1]) );
+	printf("the result of sendCheck is [%d]\n", sendCheck("MEMEMEMME", "15") );
 	
 	
 	//freeArgument(temp);

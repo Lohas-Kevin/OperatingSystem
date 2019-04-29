@@ -1,0 +1,68 @@
+CSCI 4210/6140 OPERATING SYSTEMS -- HOMEWORK 4 TEST CASES
+
+[TEST CASE #4] 8 POINTS
+TCP Client #1: LOGIN Morty\n
+               WHO\n
+TCP Client #2: LOGIN Rick\n
+               WHO\n
+TCP Client #1: LOGOUT\n
+               LOGIN Beth\n
+   UDP Client: WHO\n
+TCP Client #1: LOGOUT\n
+TCP Client #2: LOGOUT\n
+   UDP Client: WHO\n
+
+
+[TEST CASE #5] 6 POINTS
+TCP Client #1: LOGIN Rick\n
+TCP Client #2: LOGIN Rick\n
+               LOGIN Summer\n
+TCP Client #1: WHO\n
+
+
+[TEST CASE #6] 10 POINTS
+TCP Client #1: LOGIN Rick\n
+               SEND Rick 22\nI'm talking to myself!
+TCP Client #2: LOGIN G\n
+TCP Client #3: LOGIN Summer\n
+               SEND Rick 25\nStop talking to yourself!
+TCP Client #1: LOGOUT\n
+TCP Client #3: SEND Rick 20\nAre you still there?
+               SEND Summer 26\nNow I'm talking to myself!
+   UDP Client: WHO\n
+
+[TEST CASE #7] 12 POINTS
+TCP Client #1: LOGIN Rick\n
+               SEND Morty 21\nAre you there, Morty?
+TCP Client #2: LOGIN Morty\n
+               WHO\n
+TCP Client #1: SEND Morty 24\nAha, there u are, Morty!
+TCP Client #2: SEND Rick 27\nYes, idiot, I'm right here!
+               BROADCAST 21\nAaaaaaaaaaaaaaaaaagh!
+TCP Client #1: LOGOUT\n
+TCP Client #2: WHO\n
+               LOGOUT\n
+
+
+[TEST CASE #8] 12 POINTS
+TCP Client #1: LOGIN Rick\n
+TCP Client #2: LOGIN Morty\n
+               WHO\n
+TCP Client #1: SEND Morty 21\nHere's a short fable!
+               SHARE Morty 917\n
+               <bytes-from-mouse.txt>
+TCP Client #2: SEND Rick 10\meaningful
+TCP Client #1: LOGOUT\n
+TCP Client #2: LOGOUT\n
+
+
+[TEST CASE #9] 12 POINTS
+TCP Client #1: LOGIN Rick\n
+TCP Client #2: LOGIN Morty\n
+   UDP Client: BROADCAST 32\nACK! I'M CUCKOO FOR COCOA PUFFS!
+TCP Client #1: SEND Morty 23\nCheck out this picture!
+               SHARE Morty 100774\n
+               <bytes-from-sonny1978.jpg>
+TCP Client #2: SEND Rick 11\nI'm hungry.
+               LOGOUT\n
+   UDP Client: WHO\n
