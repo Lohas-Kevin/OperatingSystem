@@ -10,6 +10,8 @@
 #include <netdb.h>
 
 #define BUFFER_SIZE 1024
+
+
  
 int main()
 {
@@ -53,8 +55,63 @@ int main()
   }
 
 
+  char cache[1024];
+  char buffer[ BUFFER_SIZE ];
+  
+  while(1){
+	printf("enter the instruction numbers: \n");
+	//over here, 1 for log in, 2 for send self, 3 for send other, 4 for who
+	int d;
+	scanf("%d", &d);
+	if(d == 1){
+		printf("enter the arguments: \n");
+		char* name = calloc(1024, 1);
+		char* arg = calloc(1024, 1);
+		scanf("%s %s",arg, name);
+		sprintf(cache, "%s %s\n",arg, name);
+		write(sd, cache, strlen(cache));
+		read(sd, buffer, 1024);
+		printf("recive from server: [%s]\n", buffer);
+		free(name);
+		free(arg);
+	}
+	else if(d == 4){
+		write(sd, "WHO\n", 4);
+		read(sd, buffer, 1024);
+		printf("recive from server: [%s]\n", buffer);
+	}
+	else if( d == 5){
+		write(sd, "LOGOUT\n", 7);
+		read(sd, buffer, 1024);
+		printf("recive from server: [%s]\n", buffer);
+	}
+	else{
+		printf("enter the arguments: \n");
+		char* reciver = calloc(1024, 1);
+		char* len = calloc(1024, 1);
+		char* arg = calloc(1024, 1);
+		char* text = calloc(1024, 1);
+		scanf("%s %s %s %s",arg, reciver, len, text);
+		sprintf(cache, "%s %s %s\n%s", arg, reciver, len, text);
+		write(sd, cache, strlen(cache));
+		read(sd, buffer, 1024);
+		printf("recive from server: [%s]\n", buffer);
+		if(d == 2){
+			read(sd, buffer, 1024);
+			printf("recive from server: [%s]\n", buffer);
+		}
+		free(reciver);
+		free(len);
+		free(arg);
+		free(text);
+	}
+  }
+  
   /* The implementation of the application layer protocol is below... */
   
+  
+  
+  /*
   FILE* fp;
   fp = fopen("legend.txt", "r");
   
@@ -74,7 +131,7 @@ int main()
   char msg[1024];
   sprintf(msg, "LOGIN LEIJUN\n");
   
-  int n = write( sd, msg, strlen( msg ) );    /* or send()/recv() */
+  int n = write( sd, msg, strlen( msg ) );    
   read( sd, buffer, BUFFER_SIZE - 1 );
   printf( "Rcvd from server: %s\n", buffer );  
   
@@ -102,7 +159,7 @@ int main()
 		n = write( sd, cache, 1024 );
 		count += tc;
 		  
-		n = read( sd, buffer, BUFFER_SIZE - 1 );    /* BLOCKING */
+		n = read( sd, buffer, BUFFER_SIZE - 1 );   
 
 		if ( n == -1 )
 		{
@@ -113,17 +170,18 @@ int main()
 		{
 			printf( "Rcvd no data; also, server socket was closed\n" );
 		}
-		else  /* n > 0 */
+		else  
 		{
-			buffer[n] = '\0';    /* assume we rcvd text-based data */
+			buffer[n] = '\0';    
 			printf( "Rcvd from server: %s\n", buffer );
 		}
   }
   while(count < size);
  
-  
-  fclose( fp );
+  */
+
   close( sd );
 
+  
   return EXIT_SUCCESS;
 }
